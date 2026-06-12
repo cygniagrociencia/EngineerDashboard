@@ -750,13 +750,13 @@
                             <strong title="Conversão Eletromecânica básica. Clique para referência técnica sobre a eficiência de motores CC.">
                                 <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">1. Conversão Elétrica ➔ Mecânica 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência elétrica total consumida da fonte:</p>
-                            $$ \\require{action} \\mathtip{P_{ele}}{\\text{Potência Elétrica (W)}} = \\mathtip{V}{\\text{Tensão Nominal (V)}} \\cdot \\mathtip{I}{\\text{Corrente Aplicada (A)}} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência elétrica total consumida da fonte de alimentação:</p>
+                            $$ P_{ele} = V \\cdot I $$
                             $$ P_{ele} = ${V} \\cdot ${I.toFixed(1)} $$
                             $$ P_{ele} = ${P_ele.toFixed(1)} \\text{ W} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
-                            <p style="margin: 5px 0; font-size: 0.9em;">Potência mecânica útil no eixo do motor:</p>
-                            $$ \\mathtip{P_{util}}{\\text{Potência Útil (W)}} = \\mathtip{P_{ele}}{\\text{Potência Elétrica}} \\cdot \\mathtip{\\eta_{mot}}{\\text{Eficiência Eletromagnética}} $$
+                            <p style="margin: 5px 0; font-size: 0.9em;">Potência mecânica útil convertida no eixo do motor:</p>
+                            $$ P_{util} = P_{ele} \\cdot \\eta_{mot} $$
                             $$ P_{util} = ${P_ele.toFixed(1)} \\cdot ${eta_m.toFixed(2)} $$
                             $$ P_{util} = ${P_util.toFixed(1)} \\text{ W} $$
                         </div>
@@ -764,8 +764,8 @@
                             <strong title="Teoria da Cominuição (Trituração) e Bond Work Index. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">2. Demanda do Material (Fratura) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica exigida para triturar o fluxo:</p>
-                            $$ \\require{action} \\mathtip{P_{exigida}}{\\text{Potência Mecânica (W)}} = \\frac{\\mathtip{\\dot{m}}{\\text{Taxa de Moagem (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica (J/g)}}}{\\mathtip{\\eta_{red}}{\\text{Eficiência do Redutor}}} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica exigida pelos rolos para esmagar os grãos:</p>
+                            $$ P_{exigida} = \\frac{\\dot{m} \\cdot E_e}{\\eta_{red}} $$
                             $$ P_{exigida} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} $$
                             $$ P_{exigida} = ${P_exigida.toFixed(1)} \\text{ W} $$
                         </div>
@@ -773,13 +773,13 @@
                             <strong title="A relação direta entre Potência Angular, Torque e Rotação. Clique para referência.">
                                 <a href="https://www.engineeringtoolbox.com/work-torque-d_1377.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Cinemática e Torque 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Rotação final nos rolos após a redução:</p>
-                            $$ \\require{action} \\mathtip{N_{final}}{\\text{Rotação Final (RPM)}} = \\frac{\\mathtip{RPM_{base}}{\\text{Rotação Motor}}}{\\mathtip{Red_{caixa}}{\\text{Fator de Redução}}} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Rotação mecânica final na saída do redutor:</p>
+                            $$ N_{final} = \\frac{RPM_{base}}{Red_{caixa}} $$
                             $$ N_{final} = \\frac{${RPM_BASE}}{${red}} $$
                             $$ N_{final} = ${rot_final.toFixed(1)} \\text{ RPM} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
-                            <p style="margin: 5px 0; font-size: 0.9em;">Torque disponível nas estrias do rolo:</p>
-                            $$ \\mathtip{T_{disp}}{\\text{Torque (N.m)}} = \\frac{\\mathtip{P_{util}}{\\text{Potência Útil}} \\cdot \\mathtip{\\eta_{red}}{\\text{Eficiência Mecânica}}}{\\mathtip{\\omega}{\\text{Velocidade Angular Final (rad/s)}}} $$
+                            <p style="margin: 5px 0; font-size: 0.9em;">Torque resultante disponível nas estrias do rolo:</p>
+                            $$ T_{disp} = \\frac{P_{util} \\cdot \\eta_{red}}{\\omega} $$
                             $$ T_{disp} = \\frac{${P_util.toFixed(1)} \\cdot ${EFICIENCIA_REDUTOR}}{${rot_final.toFixed(1)} \\cdot \\frac{\\pi}{30}} $$
                             $$ T_{disp} = ${T_disp.toFixed(2)} \\text{ N.m} $$
                         </div>
@@ -847,23 +847,33 @@
                             <strong title="Trabalho mecânico de esmagamento. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">1. Demanda Mecânica (Rolos) 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica (Watts) - Trabalho real demandado para esmagar os grãos}} = \\frac{\\mathtip{\\text{Taxa de Moagem}}{\\text{Vazão Alvo (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica do Material}}}{\\mathtip{\\eta_{redutor}}{\\text{Eficiência da caixa planetária}}} $$
-                            $$ \\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica Exigida}} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} = ${P_mec_exigida.toFixed(1)}\\text{ W} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica refletida na ponta do eixo do motor:</p>
+                            $$ P_{mec} = \\frac{\\dot{m} \\cdot E_e}{\\eta_{red}} $$
+                            $$ P_{mec} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} $$
+                            $$ P_{mec} = ${P_mec_exigida.toFixed(1)} \\text{ W} $$
                         </div>
                         <div class="memorial-item red">
                             <strong title="Demanda mecânica refletida na bobina elétrica. Clique para referência.">
                                 <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Reflexo Elétrico (Tomada) 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica (Watts) - O que o moinho tentará drenar da bateria para não travar}} = \\frac{\\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica Demandada}}}{\\mathtip{\\eta_{motor}}{\\text{Eficiência Eletromecânica do Motor}}} $$
-                            $$ \\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica Exigida}} = \\frac{${P_mec_exigida.toFixed(1)}}{${eta_m.toFixed(2)}} = ${P_ele_exigida.toFixed(1)}\\text{ W} $$
-                            $$ \\mathtip{I_{exigida}}{\\text{Corrente Exigida (Amperes) - O fluxo real de energia puxado pela placa}} = \\frac{\\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica Exigida}}}{\\mathtip{V}{\\text{Tensão da Bateria}}} = \\frac{${P_ele_exigida.toFixed(1)}}{${V}} = ${I_exigida.toFixed(1)}\\text{ A} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">O que o motor precisará drenar da bateria para não travar:</p>
+                            $$ P_{ele} = \\frac{P_{mec}}{\\eta_{mot}} $$
+                            $$ P_{ele} = \\frac{${P_mec_exigida.toFixed(1)}}{${eta_m.toFixed(2)}} $$
+                            $$ P_{ele} = ${P_ele_exigida.toFixed(1)} \\text{ W} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Corrente resultante dessa demanda forçada:</p>
+                            $$ I_{exigida} = \\frac{P_{ele}}{V} $$
+                            $$ I_{exigida} = \\frac{${P_ele_exigida.toFixed(1)}}{${V}} $$
+                            $$ I_{exigida} = ${I_exigida.toFixed(1)} \\text{ A} $$
                         </div>
                         <div class="memorial-item">
                             <strong title="Conceito físico termodinâmico fundamental. Clique para aprofundar na Lei de Joule.">
                                 <a href="https://www.electrical4u.com/joules-law-d_1961.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Risco de Queima (Lei de Joule) 🔗</a>
                             </strong><br>
-                            <p style="margin-bottom: 15px; margin-top: 10px;">O calor gerado (Q) é proporcional ao <strong>quadrado</strong> da corrente elétrica (Q = I&sup2; &middot; R &middot; t). Ao saltar a exigência de <strong>${I.toFixed(1)} A</strong> para <strong>${I_exigida.toFixed(1)} A</strong>, a energia térmica dissipada na carcaça do motor cresce de forma brutal e exponencial, derretendo instantaneamente o verniz protetor do cobre.</p>
-                            $$ \\require{action} \\mathtip{Q}{\\text{Calor Gerado (Joules) - Energia térmica total dissipada no enrolamento}} = \\mathtip{I_{exigida}}{\\text{Corrente Elétrica Real (A)}}^2 \\cdot \\mathtip{R}{\\text{Resistência da Bobina (Ohms)}} \\cdot \\mathtip{t}{\\text{Tempo (s)}} $$
+                            <p style="margin-bottom: 15px; margin-top: 10px;">A energia térmica dissipada na carcaça do motor cresce de forma brutal e quadrática. Ao saltar a exigência para <strong>${I_exigida.toFixed(1)} A</strong>, o verniz protetor derrete.</p>
+                            $$ Q = I_{exigida}^2 \\cdot R \\cdot t $$
+                            $$ Q = ${I_exigida.toFixed(1)}^2 \\cdot R \\cdot t $$
+                            $$ Q = ${(I_exigida * I_exigida).toFixed(1)} \\cdot R \\cdot t \\text{ Joules} $$
                         </div>
                     `;
                 }
@@ -1015,31 +1025,40 @@
                         <div style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
                             <strong>Física Fluido-Mecânica Aplicada</strong><br>
                             • Tubos lisos de PU (Fator de Atrito &lambda;): 0.02<br>
-                            • Pressão Estática Máxima do Soprador (P<sub>max</sub>): 15.000 Pa
+                            • Pressão Estática Máxima do Soprador (P<sub>max</sub>): 15.000 Pa<br>
+                            • Densidade do Ar (&rho;<sub>a</sub>): 1.2 kg/m³
                         </div>
                         <div class="memorial-item green">
-                            <strong title="Divisão do escoamento. Clique para referência.">
+                            <strong title="Divisão do escoamento e Equação da Continuidade. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Continuity_equation" target="_blank" style="color: inherit; text-decoration: underline;">1. Divisão Volumétrica de Fluxo (Continuidade) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">A turbina injeta ar num coletor distribuidor. A vazão se divide pelas ${n_linhas} linhas da máquina.</p>
-                            $$ \\require{action} \\mathtip{Q_{linha}}{\\text{Vazão m³/min}} = \\frac{\\mathtip{Q_{turbina}}{\\text{Vazão Total}}}{\\mathtip{N}{\\text{Número de Tubos}}} = \\frac{${Q_turbina_m3min}}{${n_linhas}} = ${Q_linha_m3min.toFixed(2)} \\text{ m}^3\\text{/min} $$
-                            $$ \\mathtip{v_{nom}}{\\text{Velocidade Nominal}} = \\frac{Q_{linha} / 60}{\\mathtip{A}{\\text{Área Transversal}}} = ${v_a_nom.toFixed(1)} \\text{ m/s} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">A turbina injeta ar no coletor, dividindo a vazão pelas ${n_linhas} linhas:</p>
+                            $$ Q_{linha} = \\frac{Q_{turbina}}{N_{linhas}} $$
+                            $$ Q_{linha} = \\frac{${Q_turbina_m3min}}{${n_linhas}} $$
+                            $$ Q_{linha} = ${Q_linha_m3min.toFixed(2)} \\text{ m}^3\\text{/min} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Velocidade de ar base baseada na seção transversal da mangueira:</p>
+                            $$ v_{nom} = \\frac{Q_{linha} / 60}{A} $$
+                            $$ v_{nom} = \\frac{${Q_linha_m3min.toFixed(2)} / 60}{${Area.toFixed(4)}} $$
+                            $$ v_{nom} = ${v_a_nom.toFixed(1)} \\text{ m/s} $$
                         </div>
                         <div class="memorial-item yellow">
                             <strong title="Queda de pressão em tubos com atrito. Clique para referência.">
                                 <a href="https://www.engineeringtoolbox.com/darcy-weisbach-equation-d_646.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Perda de Carga (Darcy-Weisbach) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">Os ${L_tubo_m} metros de tubo estreito criam uma enorme resistência mecânica contra a parede, forçando o compressor.</p>
-                            $$ \\require{action} \\mathtip{\\Delta P}{\\text{Pressão de Resistência (Pascal)}} = \\mathtip{\\lambda}{\\text{Atrito do TUbo}} \\cdot \\frac{\\mathtip{L}{\\text{Comprimento}}}{\\mathtip{D}{\\text{Diâmetro}}} \\cdot \\frac{\\mathtip{\\rho_a v_{nom}^2}{2}}{\\text{Pressão Dinâmica}} \\cdot \\mathtip{(1 + \\mu)}{\\text{Peso da Semente}} $$
-                            $$ \\mathtip{\\Delta P}{\\text{Pressão}} = 0.02 \\cdot \\frac{${L_tubo_m}}{${D_m}} \\cdot \\frac{1.2 \\cdot ${v_a_nom.toFixed(1)}^2}{2} \\cdot (1 + ${SLR_teorico.toFixed(2)}) = ${delta_P.toFixed(0)} \\text{ Pa} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Resistência mecânica gerada pelos ${L_tubo_m} metros de tubo e bloqueio de massa (SLR):</p>
+                            $$ \\Delta P = \\lambda \\cdot \\frac{L}{D} \\cdot \\frac{\\rho_a \\cdot v_{nom}^2}{2} \\cdot (1 + \\mu) $$
+                            $$ \\Delta P = 0.02 \\cdot \\frac{${L_tubo_m}}{${D_m}} \\cdot \\frac{1.2 \\cdot ${v_a_nom.toFixed(1)}^2}{2} \\cdot (1 + ${SLR_teorico.toFixed(2)}) $$
+                            $$ \\Delta P = ${delta_P.toFixed(0)} \\text{ Pa} $$
                         </div>
                         <div class="memorial-item red">
                             <strong title="Curvas de bombas e ventiladores centrífugos. Clique para referência.">
                                 <a href="https://www.engineeringtoolbox.com/fan-performance-characteristics-d_48.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Curva da Turbina e Velocidade Efetiva 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">Quanto maior o &Delta;P imposto pelo tubo, menor a eficiência volumétrica que a turbina consegue manter.</p>
-                            $$ \\require{action} \\mathtip{v_{real}}{\\text{Vento Real na Ponta da Mangueira}} = \\mathtip{v_{nom}}{\\text{Vento Teórico}} \\cdot \\left( 1 - \\frac{\\mathtip{\\Delta P}{\\text{Perda de Carga}}}{\\mathtip{P_{max}}{\\text{Capacidade de Pressão de Estol da Turbina}}} \\right) $$
-                            $$ \\mathtip{v_{real}}{\\text{Vento Real}} = ${v_a_nom.toFixed(1)} \\cdot \\left( 1 - \\frac{${delta_P.toFixed(0)}}{15000} \\right) = ${v_a_real.toFixed(1)} \\text{ m/s} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">A turbina perde eficiência de sopro sob contrapressão do encanamento:</p>
+                            $$ v_{real} = v_{nom} \\cdot \\left( 1 - \\frac{\\Delta P}{P_{max}} \\right) $$
+                            $$ v_{real} = ${v_a_nom.toFixed(1)} \\cdot \\left( 1 - \\frac{${delta_P.toFixed(0)}}{15000} \\right) $$
+                            $$ v_{real} = ${v_a_real.toFixed(1)} \\text{ m/s} $$
                         </div>
                     `;
 
@@ -1147,40 +1166,70 @@
                             • Diâmetro do Tubo (D): ${diam_tubo_mm} mm<br>
                             • Raio de Curvatura Transversal (R): ${raio_mm} mm
                         </div>
+                        
                         <div class="memorial-item">
                             <strong title="Coeficiente de restituição e elasticidade. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Coefficient_of_restitution" target="_blank" style="color: inherit; text-decoration: underline;">1. Reflexão no Defletor Frontal (XY) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">Desvio baseado na lei da reflexão especular.</p>
-                            $$ \\require{action} \\mathtip{\\alpha}{\\text{Ângulo de Saída Frontal}} = 2 \\cdot \\mathtip{\\theta}{\\text{Ângulo da Chapa}} - 90° = ${angulo_saida_deg.toFixed(1)}° $$
-                            $$ \\mathtip{V_r}{\\text{Velocidade Pós-Choque}} = \\mathtip{V_0}{\\text{Vel. Queda}} \\cdot \\mathtip{e}{\\text{Restituição}} = ${v_refl.toFixed(2)} \\text{ m/s} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Desvio baseado na lei da reflexão especular:</p>
+                            $$ \\alpha = 2 \\cdot \\theta - 90^\\circ $$
+                            $$ \\alpha = 2 \\cdot ${theta_deg}^\\circ - 90^\\circ $$
+                            $$ \\alpha = ${angulo_saida_deg.toFixed(1)}^\\circ $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Velocidade de saída descontando a perda por restituição mecânica:</p>
+                            $$ V_r = V_0 \\cdot e $$
+                            $$ V_r = ${v0_vertical.toFixed(1)} \\cdot ${e_rest.toFixed(2)} $$
+                            $$ V_r = ${v_refl.toFixed(2)} \\text{ m/s} $$
                         </div>
+
                         <div class="memorial-item yellow">
                             <strong title="Equações do movimento e leis de Newton. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Equations_of_motion" target="_blank" style="color: inherit; text-decoration: underline;">2. Equação Horária da Posição Vertical 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{V_y}{\\text{Velocidade Y Inicial}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\sin(\\alpha) = ${v_y.toFixed(2)} \\text{ m/s} $$
-                            $$ \\mathtip{y(t)}{\\text{Posição}} = \\mathtip{h}{\\text{Altura}} + \\mathtip{V_y}{\\text{Vel. Inic.}} \\cdot t - \\frac{\\mathtip{g}{\\text{Grav.}}}{2}t^2 $$
-                            $$ \\mathtip{t}{\\text{Tempo (Raiz de Bhaskara para y=0)}} = ${t_queda.toFixed(3)} \\text{ s} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Componente vertical inicial da velocidade refletida:</p>
+                            $$ V_y = V_r \\cdot \\sin(\\alpha) $$
+                            $$ V_y = ${v_refl.toFixed(2)} \\cdot \\sin(${angulo_saida_deg.toFixed(1)}^\\circ) $$
+                            $$ V_y = ${v_y.toFixed(2)} \\text{ m/s} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Tempo de voo obtido isolando a raiz real da função horária da posição (y = 0):</p>
+                            $$ t = \\frac{-V_y + \\sqrt{V_y^2 + 2 \\cdot g \\cdot h}}{g} $$
+                            $$ t = \\frac{-(${v_y.toFixed(2)}) + \\sqrt{(${v_y.toFixed(2)})^2 + 2 \\cdot 9.81 \\cdot ${h.toFixed(2)}}}{9.81} $$
+                            $$ t = ${t_queda.toFixed(3)} \\text{ s} $$
                         </div>
+
                         <div class="memorial-item green">
                             <strong title="Cinemática bidimensional de projéteis. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Projectile_motion" target="_blank" style="color: inherit; text-decoration: underline;">3. Alcance Longitudinal (Eixo X) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">No eixo longitudinal (para a frente), assumimos que a semente viaja livre de resistência do ar em Movimento Retilíneo Uniforme (MRU). Primeiro, isolamos a força que a empurra horizontalmente usando o cosseno do ângulo de saída (&alpha;).</p>
-                            $$ \\require{action} \\mathtip{V_x}{\\text{Componente Horizontal da Velocidade}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\cos(\\alpha) = ${v_x.toFixed(2)} \\text{ m/s} $$
-                            <p style="margin: 10px 0; font-size: 0.9em;">O alcance máximo atingido pela semente é simplesmente essa velocidade horizontal constante multiplicada pelo tempo total que ela passa "voando" antes de tocar o solo.</p>
-                            $$ \\require{action} \\mathtip{D_x}{\\text{Alcance Frontal Máximo (m)}} = \\mathtip{V_x}{\\text{Velocidade Horizontal}} \\cdot \\mathtip{t}{\\text{Tempo de Queda}} = ${alcance_abs.toFixed(2)} \\text{ m} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Componente horizontal constante da velocidade projetada (MRU):</p>
+                            $$ V_x = V_r \\cdot \\cos(\\alpha) $$
+                            $$ V_x = ${v_refl.toFixed(2)} \\cdot \\cos(${angulo_saida_deg.toFixed(1)}^\\circ) $$
+                            $$ V_x = ${v_x.toFixed(2)} \\text{ m/s} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Alcance máximo frontal percorrido no solo:</p>
+                            $$ D_x = V_x \\cdot t $$
+                            $$ D_x = ${v_x.toFixed(2)} \\cdot ${t_queda.toFixed(3)} $$
+                            $$ D_x = ${alcance_abs.toFixed(2)} \\text{ m} $$
                         </div>
+
                         <div class="memorial-item red">
                             <strong title="Trigonometria de arcos e Sagitta. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Radius_of_curvature" target="_blank" style="color: inherit; text-decoration: underline;">4. Espalhamento Transversal Geométrico (Eixo Z) 🔗</a>
                             </strong><br>
-                            <p style="margin: 10px 0; font-size: 0.9em;">O ângulo tangencial da chapa que a semente "enxerga" é delimitado pelo diâmetro do tubo. As sementes extremas caem no máximo a D/2 do centro.</p>
-                            $$ \\require{action} \\mathtip{\\gamma}{\\text{Ângulo Tangencial Máximo}} = \\arcsin \\left( \\frac{\\mathtip{D_{tubo}/2}{\\text{Raio Interno do Tubo}}}{\\mathtip{R}{\\text{Raio de Curvatura (mm)}}} \\right) = ${gama_max_deg.toFixed(1)}° $$
-                            $$ \\mathtip{V_z}{\\text{Velocidade Máxima Lateral}} = \\mathtip{V_r}{\\text{Velocidade Refletida (m/s)}} \\cdot \\sin(\\gamma) = ${vz_max.toFixed(2)} \\text{ m/s} $$
-                            <p style="margin: 15px 0 10px 0; font-size: 0.9em; padding-left: 10px; border-left: 2px solid var(--error);"><strong>A Faixa Total</strong><br>A largura depositada no solo ($D_z$) é o somatório da abertura dinâmica (2 &times; Velocidade Lateral &times; Tempo) somada à própria largura da cortina original caindo do tubo.</p>
-                            $$ \\mathtip{D_z}{\\text{Largura Total no Solo}} = \\mathtip{D_{tubo}}{\\text{Cortina de Sementes}} + 2 \\cdot ( \\mathtip{V_z}{\\text{Vel. Lateral Z}} \\cdot \\mathtip{t}{\\text{Tempo de Queda}} ) = ${largura_faixa.toFixed(2)} \\text{ m} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Ângulo tangencial máximo de escape ditado pelas bordas do duto de ar:</p>
+                            $$ \\gamma = \\arcsin \\left( \\frac{D_{tubo}/2}{R} \\right) $$
+                            $$ \\gamma = \\arcsin \\left( \\frac{${diam_tubo_mm}/2}{${raio_mm}} \\right) $$
+                            $$ \\gamma = ${gama_max_deg.toFixed(1)}^\\circ $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Componente de velocidade máxima lateral gerada no repique:</p>
+                            $$ V_z = V_r \\cdot \\sin(\\gamma) $$
+                            $$ V_z = ${v_refl.toFixed(2)} \\cdot \\sin(${gama_max_deg.toFixed(1)}^\\circ) $$
+                            $$ V_z = ${vz_max.toFixed(2)} \\text{ m/s} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em; padding-left: 10px; border-left: 2px solid var(--error);"><strong>A Faixa Total:</strong><br>A largura depositada no solo (Dz) é a soma da abertura bilateral (2 &times; Vel. Lateral &times; Tempo) com a largura física do duto.</p>
+                            $$ D_z = D_{tubo} + 2 \\cdot (V_z \\cdot t) $$
+                            $$ D_z = ${diam_tubo_m.toFixed(3)} + 2 \\cdot (${vz_max.toFixed(2)} \\cdot ${t_queda.toFixed(3)}) $$
+                            $$ D_z = ${largura_faixa.toFixed(2)} \\text{ m} $$
                         </div>
                     `;
                 }
@@ -1852,10 +1901,11 @@
 
             // Ativa o sistema
             console.log('✅ Ativando sistema...');
-            atualizarDashboard();
-            console.log('✅ Dashboard atualizado');
+            atualizarDashboard();    // Pré-renderiza o Destorroador
+            atualizarDistribuidor(); // Pré-renderiza o Distribuidor (corrige o bug do MathJax vazio na 1ª abertura)
+            console.log('✅ Dashboards atualizados');
             renderizar();
-            console.log('✅ Renderizador iniciado');
+            console.log('✅ Renderizadores iniciados');
             renderizarDistribuidorMatterJS();
             renderizarDosador(); // Inicia o laço 2D do dosador pneumático
             console.log('✅ ===== APLICAÇÃO INICIADA COM SUCESSO! =====');
