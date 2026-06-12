@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard Destorroador NPK (Simulador Dinâmico)</title>
+    
+    <script>
+        window.MathJax = {
+            loader: { load: ['[tex]/action'] },
+            tex: { packages: {'[+]': ['action']} }
+        };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- Carregar Matter.js local -->
+    
     <script src="matter.min.js"></script>
     <script>
         // Verificar se Matter.js carregou
@@ -406,8 +413,9 @@
         console.log('🔧 Script iniciando...');
         
         // --- CONSTANTES FÍSICAS ---
-        const RPM_BASE = 3400;
-        const EFICIENCIA_REDUTOR = 0.85;
+        // Essas constantes/variáveis aparecem no memorial e também podem ganhar significado via tooltip.
+        const RPM_BASE = 3400; // [RPM] Rotação nominal do motor na base (para estimar velocidade angular).
+        const EFICIENCIA_REDUTOR = 0.85; // [-] Eficiência mecânica da caixa/redutor (fração que vira potência útil).
 
         // --- VARIÁVEIS GLOBAIS ---
         let canvas, ctx;
@@ -751,12 +759,12 @@
                                 <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">1. Conversão Elétrica ➔ Mecânica 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência elétrica total consumida da fonte de alimentação:</p>
-                            $$ P_{ele} = V \\cdot I $$
+                            $$ \\require{action} \\texttip{P_{ele}}{[W] Potência Elétrica. Definição: Energia bruta puxada da fonte. Importância: Fundamental para dimensionar a bateria e a bitola dos cabos de energia.} = \\texttip{V}{[V] Tensão Nominal. Definição: Potencial do sistema elétrico. Importância: Define a categoria do equipamento (ex: 12V ou 24V).} \\cdot \\texttip{I}{[A] Corrente Elétrica. Definição: Fluxo de elétrons. Importância: Principal gerador de calor (Joule); controlá-la evita a queima do motor.} $$
                             $$ P_{ele} = ${V} \\cdot ${I.toFixed(1)} $$
                             $$ P_{ele} = ${P_ele.toFixed(1)} \\text{ W} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Potência mecânica útil convertida no eixo do motor:</p>
-                            $$ P_{util} = P_{ele} \\cdot \\eta_{mot} $$
+                            $$ \\require{action} \\texttip{P_{util}}{[W] Potência Útil. Definição: Energia efetiva de giro. Importância: É a força real, descontadas as perdas de calor, que vai triturar a pedra.} = \\texttip{P_{ele}}{[W] Potência Elétrica Bruta.} \\cdot \\texttip{\\eta_{mot}}{[%] Eficiência Eletromagnética. Definição: Fração de eletricidade convertida em giro. Importância: Motores ruins (baixa %) esquentam mais e puxam mais bateria.} $$
                             $$ P_{util} = ${P_ele.toFixed(1)} \\cdot ${eta_m.toFixed(2)} $$
                             $$ P_{util} = ${P_util.toFixed(1)} \\text{ W} $$
                         </div>
@@ -765,7 +773,7 @@
                                 <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">2. Demanda do Material (Fratura) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica exigida pelos rolos para esmagar os grãos:</p>
-                            $$ P_{exigida} = \\frac{\\dot{m} \\cdot E_e}{\\eta_{red}} $$
+                            $$ \\require{action} \\texttip{P_{exigida}}{[W] Potência Exigida. Definição: Esforço necessário para fraturar a vazão alvo. Importância: Se superar a P_util, o rolo trava (estola).} = \\frac{\\texttip{\\dot{m}}{[g/s] Taxa de Moagem. Definição: Massa triturada por segundo. Importância: Dita a capacidade produtiva comercial da máquina.} \\cdot \\texttip{E_e}{[J/g] Energia Específica. Definição: Resistência do material. Importância: Adubos mais duros exigem motores mais caros e potentes.}}{\\texttip{\\eta_{red}}{[%] Eficiência da Caixa. Definição: Perdas por atrito. Importância: Redutores planetários bons mantêm 85% da força.}} $$
                             $$ P_{exigida} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} $$
                             $$ P_{exigida} = ${P_exigida.toFixed(1)} \\text{ W} $$
                         </div>
@@ -774,12 +782,12 @@
                                 <a href="https://www.engineeringtoolbox.com/work-torque-d_1377.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Cinemática e Torque 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Rotação mecânica final na saída do redutor:</p>
-                            $$ N_{final} = \\frac{RPM_{base}}{Red_{caixa}} $$
+                            $$ \\require{action} \\texttip{N_{final}}{[RPM] Rotação Final. Definição: Rotação visível do rolo. Importância: Determina o tempo que o material fica retido esmagando.} = \\frac{\\texttip{RPM_{base}}{[RPM] Rotação Motor. Definição: Velocidade nominal do rotor livre.}}{\\texttip{Red_{caixa}}{[Adim.] Fator de Redução. Definição: Relação das engrenagens. Importância: Transforma rotação inútil em torque esmagador brutal.}} $$
                             $$ N_{final} = \\frac{${RPM_BASE}}{${red}} $$
                             $$ N_{final} = ${rot_final.toFixed(1)} \\text{ RPM} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Torque resultante disponível nas estrias do rolo:</p>
-                            $$ T_{disp} = \\frac{P_{util} \\cdot \\eta_{red}}{\\omega} $$
+                            $$ \\require{action} \\texttip{T_{disp}}{[N.m] Torque Disponível. Definição: Força de torção nas estrias. Importância: Capacidade limite de morder e quebrar rochas sem parar.} = \\frac{\\texttip{P_{util}}{[W] Potência Útil Limite.} \\cdot \\texttip{\\eta_{red}}{[%] Eficiência Mecânica.}}{\\texttip{\\omega}{[rad/s] Vel. Angular. Definição: Rotação convertida para o Sistema Internacional.}} $$
                             $$ T_{disp} = \\frac{${P_util.toFixed(1)} \\cdot ${EFICIENCIA_REDUTOR}}{${rot_final.toFixed(1)} \\cdot \\frac{\\pi}{30}} $$
                             $$ T_{disp} = ${T_disp.toFixed(2)} \\text{ N.m} $$
                         </div>
@@ -848,7 +856,7 @@
                                 <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">1. Demanda Mecânica (Rolos) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica refletida na ponta do eixo do motor:</p>
-                            $$ P_{mec} = \\frac{\\dot{m} \\cdot E_e}{\\eta_{red}} $$
+                            $$ \\require{action} \\texttip{P_{mec}}{[W] Potência Mecânica. Definição: Esforço real exercido pelas pedras sobre o motor. Importância: Define o peso mecânico do sistema no limite.} = \\frac{\\texttip{\\dot{m}}{[g/s] Taxa de Moagem Alvo.} \\cdot \\texttip{E_e}{[J/g] Resistência do NPK.}}{\\texttip{\\eta_{red}}{[%] Perdas da Caixa Redutora.}} $$
                             $$ P_{mec} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} $$
                             $$ P_{mec} = ${P_mec_exigida.toFixed(1)} \\text{ W} $$
                         </div>
@@ -857,12 +865,12 @@
                                 <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Reflexo Elétrico (Tomada) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">O que o motor precisará drenar da bateria para não travar:</p>
-                            $$ P_{ele} = \\frac{P_{mec}}{\\eta_{mot}} $$
+                            $$ \\require{action} \\texttip{P_{ele}}{[W] Potência Elétrica Exigida. Definição: Energia elétrica drenada para suprir o esforço mecânico. Importância: Base para calcular a corrente de sobrecarga.} = \\frac{\\texttip{P_{mec}}{[W] Potência Mecânica Requerida.}}{\\texttip{\\eta_{mot}}{[%] Eficiência Eletromecânica.}} $$
                             $$ P_{ele} = \\frac{${P_mec_exigida.toFixed(1)}}{${eta_m.toFixed(2)}} $$
                             $$ P_{ele} = ${P_ele_exigida.toFixed(1)} \\text{ W} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Corrente resultante dessa demanda forçada:</p>
-                            $$ I_{exigida} = \\frac{P_{ele}}{V} $$
+                            $$ \\require{action} \\texttip{I_{exigida}}{[A] Corrente Exigida. Definição: Amperagem real puxada sob carga pesada. Importância: Se ultrapassar o limite nominal, causa degradação térmica acelerada.} = \\frac{\\texttip{P_{ele}}{[W] Potência Elétrica Calculada.}}{\\texttip{V}{[V] Tensão da Bateria.}} $$
                             $$ I_{exigida} = \\frac{${P_ele_exigida.toFixed(1)}}{${V}} $$
                             $$ I_{exigida} = ${I_exigida.toFixed(1)} \\text{ A} $$
                         </div>
@@ -871,7 +879,7 @@
                                 <a href="https://www.electrical4u.com/joules-law-d_1961.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Risco de Queima (Lei de Joule) 🔗</a>
                             </strong><br>
                             <p style="margin-bottom: 15px; margin-top: 10px;">A energia térmica dissipada na carcaça do motor cresce de forma brutal e quadrática. Ao saltar a exigência para <strong>${I_exigida.toFixed(1)} A</strong>, o verniz protetor derrete.</p>
-                            $$ Q = I_{exigida}^2 \\cdot R \\cdot t $$
+                            $$ \\require{action} \\texttip{Q}{[J] Calor Gerado. Definição: Energia térmica dissipada no motor. Importância: Cresce ao quadrado com a corrente, sendo a principal causa de incêndios em motores em estol.} = \\texttip{I_{exigida}^2}{[A²] Corrente ao Quadrado. Definição: Crescimento exponencial do Efeito Joule.} \\cdot \\texttip{R}{[Ohms] Resistência interna das bobinas de cobre.} \\cdot \\texttip{t}{[s] Tempo. Definição: Tempo de exposição à sobrecarga. Importância: Define se o fusível desarmará antes da queima.} $$
                             $$ Q = ${I_exigida.toFixed(1)}^2 \\cdot R \\cdot t $$
                             $$ Q = ${(I_exigida * I_exigida).toFixed(1)} \\cdot R \\cdot t \\text{ Joules} $$
                         </div>
@@ -1033,12 +1041,12 @@
                                 <a href="https://en.wikipedia.org/wiki/Continuity_equation" target="_blank" style="color: inherit; text-decoration: underline;">1. Divisão Volumétrica de Fluxo (Continuidade) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">A turbina injeta ar no coletor, dividindo a vazão pelas ${n_linhas} linhas:</p>
-                            $$ Q_{linha} = \\frac{Q_{turbina}}{N_{linhas}} $$
+                            $$ \\require{action} \\texttip{Q_{linha}}{[m³/min] Vazão da Linha. Definição: Volume de ar dividido para uma única mangueira. Importância: Garante que cada linha tenha ar suficiente para o arraste.} = \\frac{\\texttip{Q_{turbina}}{[m³/min] Vazão Total. Definição: Capacidade de sopro da turbina. Importância: Limita o número máximo de linhas que a máquina pode ter.}}{\\texttip{N_{linhas}}{[Un] Número de Linhas. Definição: Quantidade de distribuidores. Importância: Divide o ar disponível; muitas linhas causam entupimento.}} $$
                             $$ Q_{linha} = \\frac{${Q_turbina_m3min}}{${n_linhas}} $$
                             $$ Q_{linha} = ${Q_linha_m3min.toFixed(2)} \\text{ m}^3\\text{/min} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Velocidade de ar base baseada na seção transversal da mangueira:</p>
-                            $$ v_{nom} = \\frac{Q_{linha} / 60}{A} $$
+                            $$ \\require{action} \\texttip{v_{nom}}{[m/s] Velocidade Nominal. Definição: Vento teórico na mangueira sem atrito. Importância: Acima de 15 m/s garante o transporte em fase diluída.} = \\frac{\\texttip{Q_{linha} / 60}{Conversão de m³/min para m³/s.}}{\\texttip{A}{[m²] Área Transversal. Definição: Área interna da mangueira. Importância: Tubos menores aceleram o vento (efeito Venturi).}} $$
                             $$ v_{nom} = \\frac{${Q_linha_m3min.toFixed(2)} / 60}{${Area.toFixed(4)}} $$
                             $$ v_{nom} = ${v_a_nom.toFixed(1)} \\text{ m/s} $$
                         </div>
@@ -1047,7 +1055,7 @@
                                 <a href="https://www.engineeringtoolbox.com/darcy-weisbach-equation-d_646.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Perda de Carga (Darcy-Weisbach) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Resistência mecânica gerada pelos ${L_tubo_m} metros de tubo e bloqueio de massa (SLR):</p>
-                            $$ \\Delta P = \\lambda \\cdot \\frac{L}{D} \\cdot \\frac{\\rho_a \\cdot v_{nom}^2}{2} \\cdot (1 + \\mu) $$
+                            $$ \\require{action} \\texttip{\\Delta P}{[Pa] Perda de Carga. Definição: Pressão gasta para vencer o atrito. Importância: Se a perda for maior que a capacidade da turbina, a linha entope.} = \\texttip{\\lambda}{[Adim.] Fator de Atrito. Definição: Rugosidade do tubo. Importância: Tubos rugosos "freiam" o ar.} \\cdot \\frac{\\texttip{L}{[m] Comprimento. Definição: Tamanho da mangueira. Importância: Tubos longos geram muita perda.}}{\\texttip{D}{[m] Diâmetro. Definição: Largura interna. Importância: Tubos finos estrangulam a linha.}} \\cdot \\texttip{\\frac{\\rho_a \\cdot v_{nom}^2}{2}}{Pressão Dinâmica do Escoamento.} \\cdot (1 + \\texttip{\\mu}{[kg/kg] SLR (Solid Loading Ratio). Definição: Relação entre massa de sólido e ar. Importância: Valores altos caracterizam fase densa e bloqueio.}) $$
                             $$ \\Delta P = 0.02 \\cdot \\frac{${L_tubo_m}}{${D_m}} \\cdot \\frac{1.2 \\cdot ${v_a_nom.toFixed(1)}^2}{2} \\cdot (1 + ${SLR_teorico.toFixed(2)}) $$
                             $$ \\Delta P = ${delta_P.toFixed(0)} \\text{ Pa} $$
                         </div>
@@ -1056,7 +1064,7 @@
                                 <a href="https://www.engineeringtoolbox.com/fan-performance-characteristics-d_48.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Curva da Turbina e Velocidade Efetiva 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">A turbina perde eficiência de sopro sob contrapressão do encanamento:</p>
-                            $$ v_{real} = v_{nom} \\cdot \\left( 1 - \\frac{\\Delta P}{P_{max}} \\right) $$
+                            $$ \\require{action} \\texttip{v_{real}}{[m/s] Velocidade Real. Definição: Vento final na ponta do tubo descontando atrito. Importância: É a velocidade que efetivamente lança a semente na terra.} = \\texttip{v_{nom}}{Vento Ideal Nominal.} \\cdot \\left( 1 - \\frac{\\texttip{\\Delta P}{Perda de Carga Acumulada.}}{\\texttip{P_{max}}{[Pa] Pressão de Estol. Definição: Força estática máxima da turbina. Importância: Limite antes da turbina patinar o ar.}} \\right) $$
                             $$ v_{real} = ${v_a_nom.toFixed(1)} \\cdot \\left( 1 - \\frac{${delta_P.toFixed(0)}}{15000} \\right) $$
                             $$ v_{real} = ${v_a_real.toFixed(1)} \\text{ m/s} $$
                         </div>
@@ -1172,12 +1180,12 @@
                                 <a href="https://en.wikipedia.org/wiki/Coefficient_of_restitution" target="_blank" style="color: inherit; text-decoration: underline;">1. Reflexão no Defletor Frontal (XY) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Desvio baseado na lei da reflexão especular:</p>
-                            $$ \\alpha = 2 \\cdot \\theta - 90^\\circ $$
+                            $$ \\require{action} \\texttip{\\alpha}{[Graus] Ângulo de Saída. Definição: Ângulo do vetor de velocidade da semente após bater no defletor. Importância: Define a parábola de voo no eixo longitudinal.} = 2 \\cdot \\texttip{\\theta}{[Graus] Ângulo da Chapa. Definição: Inclinação do defletor. Importância: Regula se a semente vai mais para frente ou mais para baixo.} - 90^\\circ $$
                             $$ \\alpha = 2 \\cdot ${theta_deg}^\\circ - 90^\\circ $$
                             $$ \\alpha = ${angulo_saida_deg.toFixed(1)}^\\circ $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Velocidade de saída descontando a perda por restituição mecânica:</p>
-                            $$ V_r = V_0 \\cdot e $$
+                            $$ \\require{action} \\texttip{V_r}{[m/s] Vel. Pós-Choque. Definição: Velocidade resultante após impacto. Importância: Vetor principal que será decomposto nos 3 eixos (X, Y, Z).} = \\texttip{V_0}{[m/s] Vel. Queda. Definição: Velocidade com que a semente desce do tubo pneumático. Importância: Dita a energia cinética inicial da colisão.} \\cdot \\texttip{e}{[Adim.] Restituição. Definição: Coeficiente elástico do impacto. Importância: Aço puro repica mais (0.7); borracha amortece e espalha menos (0.4).} $$
                             $$ V_r = ${v0_vertical.toFixed(1)} \\cdot ${e_rest.toFixed(2)} $$
                             $$ V_r = ${v_refl.toFixed(2)} \\text{ m/s} $$
                         </div>
@@ -1187,12 +1195,12 @@
                                 <a href="https://en.wikipedia.org/wiki/Equations_of_motion" target="_blank" style="color: inherit; text-decoration: underline;">2. Equação Horária da Posição Vertical 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Componente vertical inicial da velocidade refletida:</p>
-                            $$ V_y = V_r \\cdot \\sin(\\alpha) $$
+                            $$ \\require{action} \\texttip{V_y}{[m/s] Vel. Y Inicial. Definição: Vetor vertical da semente. Importância: Impacta o tempo de voo. Se positivo, semente sobe; se negativo, desce rápido.} = \\texttip{V_r}{Vel. Refletida} \\cdot \\sin(\\alpha) $$
                             $$ V_y = ${v_refl.toFixed(2)} \\cdot \\sin(${angulo_saida_deg.toFixed(1)}^\\circ) $$
                             $$ V_y = ${v_y.toFixed(2)} \\text{ m/s} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Tempo de voo obtido isolando a raiz real da função horária da posição (y = 0):</p>
-                            $$ t = \\frac{-V_y + \\sqrt{V_y^2 + 2 \\cdot g \\cdot h}}{g} $$
+                            $$ \\require{action} \\texttip{t}{[s] Tempo de Voo. Definição: Duração da queda livre após o defletor. Importância: Quanto mais tempo no ar, maior o espalhamento e o risco de deriva pelo vento.} = \\frac{-\\texttip{V_y}{Vel. Vertical} + \\sqrt{\\texttip{V_y^2}{Vel. Vertical Quadrada} + 2 \\cdot \\texttip{g}{[m/s²] Gravidade. Definição: Aceleração da Terra. Importância: Puxa a semente para o solo.} \\cdot \\texttip{h}{[m] Altura da Chapa. Definição: Distância do defletor ao solo. Importância: Chapas muito altas sofrem deriva severa de vento externo.}}}{\\texttip{g}{Gravidade}} $$
                             $$ t = \\frac{-(${v_y.toFixed(2)}) + \\sqrt{(${v_y.toFixed(2)})^2 + 2 \\cdot 9.81 \\cdot ${h.toFixed(2)}}}{9.81} $$
                             $$ t = ${t_queda.toFixed(3)} \\text{ s} $$
                         </div>
@@ -1202,12 +1210,12 @@
                                 <a href="https://en.wikipedia.org/wiki/Projectile_motion" target="_blank" style="color: inherit; text-decoration: underline;">3. Alcance Longitudinal (Eixo X) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Componente horizontal constante da velocidade projetada (MRU):</p>
-                            $$ V_x = V_r \\cdot \\cos(\\alpha) $$
+                            $$ \\require{action} \\texttip{V_x}{[m/s] Vel. X. Definição: Deslocamento na linha do trator. Importância: Compõe o alcance longitudinal.} = \\texttip{V_r}{Vel. Refletida} \\cdot \\cos(\\alpha) $$
                             $$ V_x = ${v_refl.toFixed(2)} \\cdot \\cos(${angulo_saida_deg.toFixed(1)}^\\circ) $$
                             $$ V_x = ${v_x.toFixed(2)} \\text{ m/s} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Alcance máximo frontal percorrido no solo:</p>
-                            $$ D_x = V_x \\cdot t $$
+                            $$ \\require{action} \\texttip{D_x}{[m] Alcance Longitudinal. Definição: O quanto a semente vai para frente antes de cair. Importância: Atrasos longos exigem ajuste do offset no GPS do trator para não plantar fora do alvo.} = \\texttip{V_x}{Vel. Horizontal} \\cdot \\texttip{t}{Tempo de Voo} $$
                             $$ D_x = ${v_x.toFixed(2)} \\cdot ${t_queda.toFixed(3)} $$
                             $$ D_x = ${alcance_abs.toFixed(2)} \\text{ m} $$
                         </div>
@@ -1217,17 +1225,17 @@
                                 <a href="https://en.wikipedia.org/wiki/Radius_of_curvature" target="_blank" style="color: inherit; text-decoration: underline;">4. Espalhamento Transversal Geométrico (Eixo Z) 🔗</a>
                             </strong><br>
                             <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Ângulo tangencial máximo de escape ditado pelas bordas do duto de ar:</p>
-                            $$ \\gamma = \\arcsin \\left( \\frac{D_{tubo}/2}{R} \\right) $$
+                            $$ \\require{action} \\texttip{\\gamma}{[Graus] Ângulo Tangencial. Definição: Ângulo de fuga na borda da chapa curva. Importância: Dita o poder de esparramar a semente nos lados do sulco.} = \\arcsin \\left( \\frac{\\texttip{D_{tubo}/2}{[mm] Diâmetro Tubo. Definição: Abertura por onde a semente cai. Importância: Se o tubo é largo, a semente bate na extremidade curva do defletor e espalha mais.}}{\\texttip{R}{[mm] Raio de Curvatura. Definição: Grau de dobra lateral da chapa defletora. Importância: Raios fechados (ex: 80mm) geram altíssimo espalhamento lateral.}} \\right) $$
                             $$ \\gamma = \\arcsin \\left( \\frac{${diam_tubo_mm}/2}{${raio_mm}} \\right) $$
                             $$ \\gamma = ${gama_max_deg.toFixed(1)}^\\circ $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em;">Componente de velocidade máxima lateral gerada no repique:</p>
-                            $$ V_z = V_r \\cdot \\sin(\\gamma) $$
+                            $$ \\require{action} \\texttip{V_z}{[m/s] Vel. Z. Definição: Vetor de velocidade transversal. Importância: Força com que a semente se afasta do centro da linha.} = \\texttip{V_r}{Velocidade Refletida} \\cdot \\sin(\\gamma) $$
                             $$ V_z = ${v_refl.toFixed(2)} \\cdot \\sin(${gama_max_deg.toFixed(1)}^\\circ) $$
                             $$ V_z = ${vz_max.toFixed(2)} \\text{ m/s} $$
                             <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
                             <p style="margin: 5px 0; font-size: 0.9em; padding-left: 10px; border-left: 2px solid var(--error);"><strong>A Faixa Total:</strong><br>A largura depositada no solo (Dz) é a soma da abertura bilateral (2 &times; Vel. Lateral &times; Tempo) com a largura física do duto.</p>
-                            $$ D_z = D_{tubo} + 2 \\cdot (V_z \\cdot t) $$
+                            $$ \\require{action} \\texttip{D_z}{[m] Faixa de Distribuição. Definição: Largura total coberta pela sementeira. Importância: Precisa casar (match) perfeitamente com a distância entre as linhas de plantio para não haver falha ou sobreposição.} = \\texttip{D_{tubo}}{Largura Inicial da Cortina} + 2 \\cdot ( \\texttip{V_z}{Vel. Lateral Z} \\cdot \\texttip{t}{Tempo de Queda} ) $$
                             $$ D_z = ${diam_tubo_m.toFixed(3)} + 2 \\cdot (${vz_max.toFixed(2)} \\cdot ${t_queda.toFixed(3)}) $$
                             $$ D_z = ${largura_faixa.toFixed(2)} \\text{ m} $$
                         </div>
