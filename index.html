@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Destorroador NPK (Simulador Dinâmico)</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Carregar Matter.js local -->
+    <script src="matter.min.js"></script>
+    <script>
+        // Verificar se Matter.js carregou
+        function aguardarMatterJS(callback, tentativas = 0) {
+            if (typeof window.Matter !== 'undefined') {
+                console.log('Matter.js carregado com sucesso!');
+                callback();
+            } else if (tentativas < 50) {
+                setTimeout(() => aguardarMatterJS(callback, tentativas + 1), 100);
+            } else {
+                console.warn('Matter.js não disponível!');
+                callback();
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-main: #0e1117;
+            --bg-panel: #161b22;
+            --bg-card: #21262d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --success: #3fb950;
+            --success-bg: rgba(46, 160, 67, 0.15);
+            --error: #ff7b72;
+            --error-bg: rgba(248, 81, 73, 0.15);
+            --warning: #d29922;
+            --warning-bg: rgba(187, 128, 9, 0.15);
+            --border: #30363d;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        #sidebar, #sidebar-distribuidor {
+            width: 380px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar h2, #sidebar h3, #sidebar-distribuidor h2, #sidebar-distribuidor h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #fff;
+        }
+
+        hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
+
+        .control-group { margin-bottom: 20px; }
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--error); }
+        
+        .sync-inputs { display: flex; gap: 10px; align-items: center; }
+        .sync-inputs input[type="range"] { flex: 2; }
+        .sync-inputs input[type="number"] { 
+            flex: 1; 
+            background: var(--bg-main); 
+            border: 1px solid var(--border); 
+            color: #fff; 
+            padding: 5px; 
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .radio-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .radio-group label { display: flex; align-items: center; gap: 8px; font-size: 0.95em; cursor: pointer; }
+
+        /* Main Content Styling */
+        #main-content, #main-distribuidor {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-title { margin: 0 0 10px 0; font-size: 2em; color: #fff; }
+        
+        canvas { 
+            background: #0d1117; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            width: 100%;
+            height: 250px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            display: block;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 30px;
+        }
+
+        /* Metric Cards */
+        .metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .metric-card { background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .metric-label { font-size: 0.85em; color: var(--text-muted); margin-bottom: 5px; }
+        .metric-value { font-size: 1.8em; color: #fff; }
+        .metric-delta { font-size: 0.85em; margin-top: 5px; }
+        .delta-red { color: var(--error); }
+        .delta-green { color: var(--success); }
+
+        /* Status Alerts */
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 15px; line-height: 1.5; border: 1px solid transparent; }
+        .alert-success { background: var(--success-bg); border-color: var(--success); color: #fff; }
+        .alert-error { background: var(--error-bg); border-color: var(--error); color: #fff; }
+        .alert-warning { background: var(--warning-bg); border-color: var(--warning); color: #fff; }
+        
+        /* Memorial Box */
+        .memorial-box { background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .memorial-item { margin-bottom: 15px; padding: 12px; border-radius: 6px; background: var(--bg-card); border-left: 4px solid var(--accent); }
+        .memorial-item.yellow { border-left-color: var(--warning); }
+        .memorial-item.green { border-left-color: var(--success); }
+        .memorial-item.red { border-left-color: var(--error); }
+        .mjx-chtml { margin: 0 !important; } /* Ajuste fino para o MathJax */
+
+        /* CSS da Tela Inicial (Portal de Simuladores) */
+        #home-screen {
+            flex: 1;
+            padding: 60px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-main);
+        }
+        .home-title { font-size: 2.8em; margin-bottom: 10px; color: #fff; text-align: center; }
+        .home-subtitle { color: var(--text-muted); font-size: 1.1em; margin-bottom: 50px; text-align: center; }
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+        }
+        .tool-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 35px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .tool-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .tool-card.disabled { cursor: not-allowed; opacity: 0.5; }
+        .tool-card.disabled:hover { transform: none; border-color: var(--border); box-shadow: none; }
+        .tool-icon { font-size: 3.5em; }
+        .tool-name { font-size: 1.25em; color: #fff; font-weight: bold; }
+        .tool-status { font-size: 0.85em; padding: 5px 10px; border-radius: 12px; background: var(--bg-card); color: var(--text-muted); }
+        .status-active { background: var(--success-bg); color: var(--success); font-weight: bold; }
+        
+        /* Classes Utilitárias de Navegação */
+        .hidden { display: none !important; }
+        .btn-voltar { cursor: pointer; color: var(--accent); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 25px; font-weight: bold; padding: 8px 12px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); transition: 0.2s; }
+        .btn-voltar:hover { background: var(--border); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="home-screen">
+        <h1 class="home-title">Portal de Engenharia</h1>
+        <p class="home-subtitle">Selecione a ferramenta de simulação desejada.</p>
+        
+        <div class="tools-grid">
+            <div class="tool-card" id="btn-destorroador">
+                <div class="tool-icon">⚙️</div>
+                <div class="tool-name">Destorroador NPK</div>
+                <div class="tool-status status-active">Acessar Simulador</div>
+            </div>
+
+            <div class="tool-card" id="btn-distribuidor">
+                <div class="tool-icon">🚜</div>
+                <div class="tool-name">Distribuidor de Sólidos</div>
+                <div class="tool-status status-active">Acessar Simulador</div>
+            </div>
+            <div class="tool-card disabled">
+                <div class="tool-icon">💧</div>
+                <div class="tool-name">Aplicação de Fluido no Solo</div>
+                <div class="tool-status">Em desenvolvimento</div>
+            </div>
+            <div class="tool-card disabled">
+                <div class="tool-icon">🚰</div>
+                <div class="tool-name">Aplicação Linha Pressurizada</div>
+                <div class="tool-status">Em desenvolvimento</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar" class="hidden">
+        <div class="btn-voltar" id="btn-voltar">⬅ Voltar ao Portal</div>
+        
+        <h2 title="Características físicas intrínsecas ao aglomerado mineral que será triturado.">🪨 Propriedades do Material</h2>
+        <div class="control-group" title="Índice empírico (Bond's Work Index) que define o trabalho mecânico em Joules para cisalhar 1 grama de material. O NPK cristalizado exige entre 15 e 20 J/g.">
+            <label><span>Energia Específica de Fratura</span><span id="val_energia">18.0</span></label>
+            <input type="range" id="in_energia" min="1.0" max="50.0" value="18.0" step="0.5">
+            <small style="color: var(--text-muted); font-size: 0.75em;">Trabalho para romper o grão. NPK = ~15 a 20 J/g.</small>
+        </div>
+        <hr>
+
+        <h2 title="Alterna o referencial do cálculo: da mecânica empurrando o limite, para a elétrica sofrendo o impacto.">🔄 Modo de Simulação</h2>
+        <div class="radio-group">
+            <label><input type="radio" name="modo" value="1" checked> ⚙️ 1. Sistema Mecânico (Foco em Potência)</label>
+            <label><input type="radio" name="modo" value="2"> ⚡ 2. Sistema Elétrico (Risco de Queima)</label>
+        </div>
+        <hr>
+
+        <h2 title="Capacidade da fonte de alimentação e conversão eletromecânica do motor CC.">⚡ Parâmetros Elétricos</h2>
+        <div class="control-group" title="Diferença de potencial da bateria/fonte. Sistemas veiculares padrão operam em 12V ou 24V.">
+            <label><span>Tensão Nominal (Vdc)</span><span id="val_tensao">24</span></label>
+            <input type="range" id="in_tensao" min="12" max="48" value="24" step="12">
+        </div>
+        <div class="control-group" title="Limite de corrente contínua que o enrolamento do motor suporta antes do verniz isolante derreter (Fator limitante térmico).">
+            <label><span id="lbl_corrente">Corrente Aplicada (A)</span><span id="val_corrente">4.0</span></label>
+            <input type="range" id="in_corrente" min="1.0" max="50.0" value="4.0" step="0.5">
+        </div>
+        <div class="control-group" title="Porcentagem de energia elétrica que efetivamente vira giro e torque. Os 25% restantes são dissipados como calor na carcaça.">
+            <label><span>Eficiência do Motor (%)</span><span id="val_eficiencia">75</span></label>
+            <input type="range" id="in_eficiencia" min="10" max="100" value="75" step="5">
+        </div>
+        <hr>
+
+        <h2 title="Cinemática da caixa de engrenagens do Destorroador.">🎛️ Parâmetros do Moinho</h2>
+        <div class="control-group" title="Fator multiplicador de força. Uma redução de 50:1 significa que o motor gira 50 vezes para o rolo girar 1 vez, multiplicando o torque por 50 (menos as perdas por atrito).">
+            <label><span>Relação de Redução (1:X)</span><span id="val_reducao">50</span></label>
+            <input type="range" id="in_reducao" min="1" max="200" value="50" step="1">
+        </div>
+        <div class="control-group" title="Demanda de produção: Quantos gramas de fertilizante a máquina precisa engolir e cuspir por segundo.">
+            <label>Taxa de Moagem Alvo (g/s)</label>
+            <div class="sync-inputs">
+                <input type="range" id="in_taxa_range" min="0.1" max="50.0" value="11.0" step="0.1">
+                <input type="number" id="in_taxa_num" min="0.1" max="50.0" value="11.0" step="0.1">
+            </div>
+        </div>
+    </div>
+
+    <div id="main-content" class="hidden">
+        <div>
+            <h1 class="header-title">⚙️ Dashboard: Destorroador NPK</h1>
+            <p style="color: var(--text-muted); margin: 0;">Simulador dinâmico de dimensionamento mecânico e proteção elétrica a 60 FPS.</p>
+        </div>
+
+        <canvas id="moinhoCanvas" width="1000" height="250" style="min-height: 250px; flex-shrink: 0;"></canvas>
+
+        <div class="dashboard-grid">
+            <div id="painel_esquerdo"></div>
+
+            <div id="painel_direito" class="memorial-box"></div>
+        </div>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 10px; color: var(--text-muted); font-size: 0.85em;">
+            Física aplicada: Conservação de Energia (V x A), resistência de materiais e Lei de Joule.
+        </div>
+    </div>
+
+    <div id="sidebar-distribuidor" class="hidden">
+        <div class="btn-voltar" id="btn-voltar-dist">⬅ Voltar ao Portal</div>
+
+        <h2 title="Alterna entre o cálculo da linha de ar e o voo livre da semente.">🔄 Modo de Simulação</h2>
+        <div class="radio-group">
+            <label><input type="radio" name="modo_dist" value="1" checked> 🚜 1. Dosagem e Arraste Pneumático</label>
+            <label><input type="radio" name="modo_dist" value="2"> ☄️ 2. Cinemática de Espalhamento (Queda)</label>
+        </div>
+        <hr>
+        
+        <div id="grp_dist_modo1">
+            <h2 title="Características de campo ditadas pelo agricultor.">🚜 Demanda Agronômica</h2>
+            <div class="control-group" title="Quantidade de material desejado por Hectare.">
+                <label><span>Taxa Alvo (kg/ha)</span><span id="val_dist_taxa">120</span></label>
+                <input type="range" id="in_dist_taxa" min="10" max="400" value="120" step="5">
+            </div>
+            <div class="control-group" title="Velocidade de operação da máquina na lavoura. Quanto mais rápido, mais o motor sofre para compensar.">
+                <label><span>Velocidade do Trator (km/h)</span><span id="val_dist_veltrator">8.0</span></label>
+                <input type="range" id="in_dist_veltrator" min="2.0" max="18.0" value="8.0" step="0.5">
+            </div>
+            <div class="control-group" title="Largura de atuação correspondente a este único dosador (espaçamento da linha).">
+                <label><span>Largura de Trabalho (m)</span><span id="val_dist_largura">0.45</span></label>
+                <input type="range" id="in_dist_largura" min="0.17" max="1.00" value="0.45" step="0.01">
+            </div>
+            <hr>
+
+            <h2 title="Geometria do dosador e elétrica limitante.">⚙️ Implemento e Motor</h2>
+            <div class="control-group" title="Volume físico de material que o rolo estriado empurra por volta.">
+                <label><span>Volume do Rolo (cm³/rev)</span><span id="val_dist_vol">150</span></label>
+                <input type="range" id="in_dist_vol" min="10" max="500" value="150" step="10">
+            </div>
+            <div class="control-group" title="Massa por unidade de volume do material.">
+                <label><span>Densidade (g/cm³)</span><span id="val_dist_densidade">0.75</span></label>
+                <input type="range" id="in_dist_densidade" min="0.2" max="1.5" value="0.75" step="0.05">
+            </div>
+            <div class="control-group" title="Tensão elétrica alimentada pela bateria do trator.">
+                <label><span>Tensão do Motor (Vdc)</span><span id="val_dist_tensao">12</span></label>
+                <input type="range" id="in_dist_tensao" min="12" max="24" value="12" step="12">
+            </div>
+            <div class="control-group" title="Amperagem limite antes da queima do verniz da bobina.">
+                <label><span>Corrente Máx (A)</span><span id="val_dist_corrente">5.0</span></label>
+                <input type="range" id="in_dist_corrente" min="1.0" max="20.0" value="5.0" step="0.5">
+            </div>
+            <hr>
+
+            <h2 title="Malha de ar que transporta o sólido do dosador.">🌪️ Sistema Pneumático</h2>
+            <div class="control-group" title="Quantidade de linhas de plantio. A turbina divide seu vento total entre todas elas.">
+                <label><span>Número de Linhas</span><span id="val_dist_linhas">6</span></label>
+                <input type="range" id="in_dist_linhas" min="1" max="48" value="6" step="1">
+            </div>
+            <div class="control-group" title="Comprimento da mangueira de cada linha. Mangueiras longas geram atrito (perda de carga) e reduzem a velocidade real do vento.">
+                <label><span>Comprimento do Tubo (m)</span><span id="val_dist_comprimento">8.0</span></label>
+                <input type="range" id="in_dist_comprimento" min="1.0" max="30.0" value="8.0" step="0.5">
+            </div>
+            <div class="control-group" title="Capacidade volumétrica do soprador.">
+                <label><span>Vazão da Turbina (m³/min)</span><span id="val_dist_vazaoturbina">18.0</span></label>
+                <input type="range" id="in_dist_vazaoturbina" min="2.0" max="100.0" value="18.0" step="1.0">
+            </div>
+            <div class="control-group" title="Diâmetro interno de cada mangueira individual.">
+                <label><span>Diâmetro Tubulação (mm)</span><span id="val_dist_diametro">32</span></label>
+                <input type="range" id="in_dist_diametro" min="20" max="150" value="32" step="2">
+            </div>
+        </div>
+
+        <div id="grp_dist_modo2" class="hidden">
+            <h2 title="Geometria da chapa final de distribuição na linha de plantio.">☄️ Terminal Defletor</h2>
+            <div class="control-group" title="Velocidade com que a semente cai verticalmente quando sai da mangueira pneumática e atinge o defletor.">
+                <label><span>Velocidade de Queda (V₀ m/s)</span><span id="val_dist_v0">12.0</span></label>
+                <input type="range" id="in_dist_v0" min="2.0" max="40.0" value="12.0" step="0.5">
+            </div>
+            <div class="control-group" title="Ângulo de inclinação do defletor em relação à horizontal. 45° reflete a semente horizontalmente (máximo alcance). Valores menores aumentam a componente descendente.">
+                <label><span>Ângulo Vertical (°)</span><span id="val_dist_angulo">30</span></label>
+                <input type="range" id="in_dist_angulo" min="0" max="80" value="30" step="1">
+            </div>
+            <div class="control-group" title="Raio de dobra geométrica da chapa. Raios abertos (1000mm) a deixam quase plana. Raios apertados (60mm) geram alto espalhamento.">
+                <label><span>Raio de Curvatura (mm)</span><span id="val_dist_raio">100</span></label>
+                <input type="range" id="in_dist_raio" min="60" max="1000" value="100" step="10">
+            </div>
+            <div class="control-group" title="Largura física total da chapa (limite estrutural do defletor).">
+                <label><span>Largura da Chapa (L) mm</span><span id="val_dist_largchapa">100</span></label>
+                <input type="range" id="in_dist_largchapa" min="50" max="300" value="100" step="10">
+            </div>
+            <div class="control-group" title="Diâmetro interno da tubulação de descida. Define a dispersão inicial (cortina) das sementes antes de tocarem a chapa. Tubos finos reduzem o espalhamento.">
+                <label><span>Diâmetro do Tubo (mm)</span><span id="val_dist_diamtubo2">40</span></label>
+                <input type="range" id="in_dist_diamtubo2" min="20" max="100" value="40" step="2">
+            </div>
+            <div class="control-group" title="Distância vertical do ponto de impacto na chapa até o solo/sulco onde a semente pousa.">
+                <label><span>Altura da Chapa (m)</span><span id="val_dist_altura">0.8</span></label>
+                <input type="range" id="in_dist_altura" min="0.1" max="2.0" value="0.8" step="0.1">
+            </div>
+            <div class="control-group" title="Coeficiente de Restituição (e): Determina quanta energia a semente perde no choque contra o defletor. Borracha perde muito (~0.4), Aço preserva mais (~0.7).">
+                <label><span>Coeficiente Restituição (e)</span><span id="val_dist_cr">0.6</span></label>
+                <input type="range" id="in_dist_cr" min="0.1" max="1.0" value="0.6" step="0.05">
+            </div>
+        </div>
+    </div>
+
+    <div id="main-distribuidor" class="hidden">
+        <div>
+            <h1 class="header-title">🚜 Dashboard: Distribuidor de Sólidos</h1>
+            <p style="color: var(--text-muted); margin: 0;">Simulador pneumático para projeto de semeadoras (Fase Diluída).</p>
+        </div>
+
+        <canvas id="distribuidorCanvas" width="1000" height="300" style="min-height: 300px; flex-shrink: 0; display: none;"></canvas>
+
+        <div class="dashboard-grid" style="margin-top: 20px;">
+            <div id="painel_esq_dist"></div>
+            <div id="painel_dir_dist" class="memorial-box"></div>
+        </div>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 10px; color: var(--text-muted); font-size: 0.85em;">
+            Física aplicada: Escoamento de fluidos compressíveis, vazão volumétrica e razão de carregamento bifásico.
+        </div>
+    </div>
+
+    <script>
+        console.log('🔧 Script iniciando...');
+        
+        // --- CONSTANTES FÍSICAS ---
+        const RPM_BASE = 3400;
+        const EFICIENCIA_REDUTOR = 0.85;
+
+        // --- VARIÁVEIS GLOBAIS ---
+        let canvas, ctx;
+        let canvasDist, ctxDist;
+        let anguloEsquerdo = 0;
+        let anguloDireito = 0;
+        let rotacaoFinalGlobal = 0;
+        let isStalled = false;
+        let particulas = [];
+        let particulasDistribuidor = [];
+        let ativarAnimacaoDist = false;
+        let mathJaxTimer = null;
+        
+        // Matter.js
+        let Matter = null;
+        let Engine = null;
+        let World = null;
+        let Bodies = null;
+        let Body = null;
+        let engineDist = null;
+        let worldDist = null;
+        let defletorBody = null;
+        let particulasBodyDist = [];
+        let tempoGeracaoSemente = 0;
+        
+        // DOM
+        let dom = null;
+
+        // Aguardar Matter.js e depois inicializar
+        console.log('⏳ Aguardando Matter.js...');
+        aguardarMatterJS(function() {
+            console.log('✅ Matter.js carregado!');
+            // Aguardar também que o DOM esteja pronto
+            if (document.readyState === 'loading') {
+                console.log('⏳ Aguardando DOMContentLoaded...');
+                document.addEventListener('DOMContentLoaded', iniciarAplicacao);
+            } else {
+                console.log('✅ DOM já está pronto!');
+                iniciarAplicacao();
+            }
+        });
+        
+        function iniciarAplicacao() {
+            console.log('✅ Aplicação iniciando...');
+            console.log('✅ Window.Matter:', typeof window.Matter);
+            
+            // Inicializar Matter.js
+            inicializarMatterJS();
+
+            // --- VARIÁVEIS DA ANIMAÇÃO ---
+            const canvas = document.getElementById('moinhoCanvas');
+            const ctx = canvas.getContext('2d');
+            let anguloEsquerdo = 0;
+            let anguloDireito = 0;
+            let rotacaoFinalGlobal = 0;
+            let isStalled = false;
+            let particulas = [];
+            let particulasDistribuidor = [];
+            let ativarAnimacaoDist = false;
+            let particulasDosador = [];
+            let ativarAnimacaoDosador = false;
+            let anguloDosador = 0;
+            let mathJaxTimer = null;
+            console.log('✅ Canvas destorroador inicializado');
+            
+            // Inicializar Matter.js
+            function inicializarMatterJS() {
+                // Se Matter.js está desativado, retornar false
+                if (window.Matter && window.Matter.DISABLED) {
+                    console.warn('Matter.js não disponível, usando física simplificada');
+                    return false;
+                }
+                
+                if (window.Matter) {
+                    Matter = window.Matter;
+                    Engine = Matter.Engine;
+                    World = Matter.World;
+                    Bodies = Matter.Bodies;
+                    Body = Matter.Body;
+                    console.log('Matter.js inicializado com sucesso!');
+                    return true;
+                } else {
+                    console.warn('Matter.js ainda não disponível!');
+                    return false;
+                }
+            }
+
+            // Ajuste automático do Canvas para não distorcer em telas diferentes
+            function redimensionarCanvas() {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+            }
+            function redimensionarCanvasDist() {
+                canvasDist = document.getElementById('distribuidorCanvas');
+                ctxDist = canvasDist.getContext('2d');
+                canvasDist.width = canvasDist.clientWidth;
+                canvasDist.height = canvasDist.clientHeight;
+            }
+            window.addEventListener('resize', redimensionarCanvas);
+            window.addEventListener('resize', redimensionarCanvasDist);
+            redimensionarCanvas();
+            redimensionarCanvasDist();
+
+            // --- MAPEAMENTO DE DOM SEGURO ---
+            dom = {
+                homeScreen: document.getElementById('home-screen'),
+                sidebar: document.getElementById('sidebar'),
+                mainContent: document.getElementById('main-content'),
+                sidebarDist: document.getElementById('sidebar-distribuidor'),
+                mainDist: document.getElementById('main-distribuidor'),
+                
+                btnDestorroador: document.getElementById('btn-destorroador'),
+                btnDistribuidor: document.getElementById('btn-distribuidor'),
+                btnVoltar: document.getElementById('btn-voltar'),
+                btnVoltarDist: document.getElementById('btn-voltar-dist'),
+                
+                // Variáveis Destorroador
+                energia: document.getElementById('in_energia'),
+                tensao: document.getElementById('in_tensao'),
+                corrente: document.getElementById('in_corrente'),
+                eficiencia: document.getElementById('in_eficiencia'),
+                reducao: document.getElementById('in_reducao'),
+                taxaRange: document.getElementById('in_taxa_range'),
+                taxaNum: document.getElementById('in_taxa_num'),
+                lblCorrente: document.getElementById('lbl_corrente'),
+                painelEsquerdo: document.getElementById('painel_esquerdo'),
+                painelDireito: document.getElementById('painel_direito'),
+                
+                // Variáveis Distribuidor (Pneumática e Agronômica)
+                distGrpModo1: document.getElementById('grp_dist_modo1'),
+                distGrpModo2: document.getElementById('grp_dist_modo2'),
+                distTaxa: document.getElementById('in_dist_taxa'),
+                distVelTrator: document.getElementById('in_dist_veltrator'),
+                distLargura: document.getElementById('in_dist_largura'),
+                distDensidade: document.getElementById('in_dist_densidade'),
+                distVol: document.getElementById('in_dist_vol'),
+                distTensao: document.getElementById('in_dist_tensao'),
+                distCorrente: document.getElementById('in_dist_corrente'),
+                distLinhas: document.getElementById('in_dist_linhas'),
+                distComprimento: document.getElementById('in_dist_comprimento'),
+                distVazaoTurbina: document.getElementById('in_dist_vazaoturbina'),
+                distDiametro: document.getElementById('in_dist_diametro'),
+                
+                // Variáveis Distribuidor (Cinemática)
+                distV0: document.getElementById('in_dist_v0'),
+                distAngulo: document.getElementById('in_dist_angulo'),
+                distRaio: document.getElementById('in_dist_raio'),
+                distLargChapa: document.getElementById('in_dist_largchapa'),
+                distDiamTubo2: document.getElementById('in_dist_diamtubo2'),
+                distAltura: document.getElementById('in_dist_altura'),
+                distCr: document.getElementById('in_dist_cr'),
+                painelEsqDist: document.getElementById('painel_esq_dist'),
+                painelDirDist: document.getElementById('painel_dir_dist')
+            };
+
+            // --- SINCRONIZAÇÃO DOS CONTROLES ---
+            dom.taxaRange.addEventListener('input', function(e) {
+                dom.taxaNum.value = e.target.value; atualizarDashboard();
+            });
+            dom.taxaNum.addEventListener('input', function(e) {
+                dom.taxaRange.value = e.target.value; atualizarDashboard();
+            });
+            
+            const inputsSimples = [dom.energia, dom.tensao, dom.corrente, dom.eficiencia, dom.reducao];
+            inputsSimples.forEach(function(el) { el.addEventListener('input', atualizarDashboard); });
+
+            const inputsDist = [dom.distTaxa, dom.distVelTrator, dom.distLargura, dom.distDensidade, dom.distVol, dom.distTensao, dom.distCorrente, dom.distLinhas, dom.distComprimento, dom.distVazaoTurbina, dom.distDiametro, dom.distV0, dom.distAngulo, dom.distRaio, dom.distLargChapa, dom.distDiamTubo2, dom.distAltura, dom.distCr];
+            inputsDist.forEach(function(el) { 
+                el.addEventListener('input', function() {
+                    atualizarDistribuidor();
+                    // Se estiver em modo 2 (Cinemática), reinicializar física
+                    const modoDistElement = document.querySelector('input[name="modo_dist"]:checked');
+                    if (modoDistElement && modoDistElement.value === "2" && ativarAnimacaoDist) {
+                        const v0 = parseFloat(dom.distV0.value) || 12;
+                        const theta = parseFloat(dom.distAngulo.value) || 30;
+                        const h = parseFloat(dom.distAltura.value) || 0.8;
+                        const e = parseFloat(dom.distCr.value) || 0.6;
+                        inicializarFisicaDistribuidor(theta, v0, h, e);
+                    }
+                });
+            });
+
+            const radiosModo = document.querySelectorAll('input[name="modo"]');
+            radiosModo.forEach(function(radio) { radio.addEventListener('change', atualizarDashboard); });
+
+            const radiosModoDist = document.querySelectorAll('input[name="modo_dist"]');
+            radiosModoDist.forEach(function(radio) { 
+                radio.addEventListener('change', function() {
+                    atualizarDistribuidor();
+                    // Se mudar para modo 2, inicializar a física
+                    if (this.value === "2" && ativarAnimacaoDist) {
+                        const v0 = parseFloat(dom.distV0.value) || 12;
+                        const theta = parseFloat(dom.distAngulo.value) || 30;
+                        const h = parseFloat(dom.distAltura.value) || 0.8;
+                        const e = parseFloat(dom.distCr.value) || 0.6;
+                        inicializarFisicaDistribuidor(theta, v0, h, e);
+                    }
+                });
+            });
+
+            // --- NAVEGAÇÃO ENTRE TELAS ---
+            function irParaHome() {
+                dom.sidebar.classList.add('hidden');
+                dom.mainContent.classList.add('hidden');
+                dom.sidebarDist.classList.add('hidden');
+                dom.mainDist.classList.add('hidden');
+                dom.homeScreen.classList.remove('hidden');
+            }
+
+            dom.btnDestorroador.addEventListener('click', function() {
+                console.log('Clicou em Destorroador');
+                try {
+                    dom.homeScreen.classList.add('hidden');
+                    dom.sidebar.classList.remove('hidden');
+                    dom.mainContent.classList.remove('hidden');
+                    setTimeout(redimensionarCanvas, 50);
+                    console.log('Destorroador aberto');
+                } catch(err) {
+                    console.error('Erro ao abrir destorroador:', err);
+                }
+            });
+
+            dom.btnDistribuidor.addEventListener('click', function() {
+                console.log('Clicou em Distribuidor');
+                try {
+                    console.log('Tentando esconder home');
+                    dom.homeScreen.classList.add('hidden');
+                    
+                    console.log('Tentando mostrar sidebar distribuidor');
+                    dom.sidebarDist.classList.remove('hidden');
+                    
+                    console.log('Tentando mostrar main distribuidor');
+                    dom.mainDist.classList.remove('hidden');
+                    
+                    console.log('Tentando redimensionar canvas');
+                    setTimeout(function() {
+                        try {
+                            redimensionarCanvasDist();
+                            console.log('Canvas distribuidor redimensionado');
+                            
+                            console.log('Tentando atualizar distribuidor');
+                            atualizarDistribuidor();
+                            console.log('Distribuidor atualizado');
+                            
+                            // Se estiver em modo 2, inicializar física
+                            const modoDistElement = document.querySelector('input[name="modo_dist"]:checked');
+                            if (modoDistElement && modoDistElement.value === "2") {
+                                console.log('Modo 2 detectado, inicializando física');
+                                const v0 = parseFloat(dom.distV0.value) || 12;
+                                const theta = parseFloat(dom.distAngulo.value) || 30;
+                                const h = parseFloat(dom.distAltura.value) || 0.8;
+                                const e = parseFloat(dom.distCr.value) || 0.6;
+                                inicializarFisicaDistribuidor(theta, v0, h, e);
+                            }
+                            console.log('Distribuidor aberto com sucesso!');
+                        } catch(err) {
+                            console.error('Erro no setTimeout:', err);
+                            console.error('Stack:', err.stack);
+                        }
+                    }, 100);
+                } catch(err) {
+                    console.error('Erro ao navegar para distribuidor:', err);
+                    console.error('Stack:', err.stack);
+                    dom.homeScreen.classList.remove('hidden');
+                }
+            });
+
+            dom.btnVoltar.addEventListener('click', irParaHome);
+            dom.btnVoltarDist.addEventListener('click', irParaHome);
+
+            // --- LÓGICA MATEMÁTICA E RENDERIZAÇÃO DE INTERFACE ---
+            function atualizarDashboard() {
+                // Atualiza textos ao lado das barras
+                document.getElementById('val_energia').innerText = parseFloat(dom.energia.value).toFixed(1);
+                document.getElementById('val_tensao').innerText = dom.tensao.value;
+                document.getElementById('val_corrente').innerText = parseFloat(dom.corrente.value).toFixed(1);
+                document.getElementById('val_eficiencia').innerText = dom.eficiencia.value;
+                document.getElementById('val_reducao').innerText = dom.reducao.value;
+
+                // Captura valores numéricos limpos
+                const E_e = parseFloat(dom.energia.value);
+                const V = parseFloat(dom.tensao.value);
+                const I = parseFloat(dom.corrente.value);
+                const eta_m = parseFloat(dom.eficiencia.value) / 100.0;
+                const red = parseFloat(dom.reducao.value);
+                let taxa = parseFloat(dom.taxaRange.value);
+                
+                // Prevenção caso o usuário apague o número da caixa de texto
+                if(isNaN(taxa)) taxa = 0.1;
+
+                const modoElemento = document.querySelector('input[name="modo"]:checked');
+                const modo = modoElemento ? modoElemento.value : "1";
+
+                let htmlEsquerdo = "";
+                let htmlDireito = "";
+
+                if (modo === "1") {
+                    dom.lblCorrente.innerText = "Corrente Aplicada (A)";
+                    
+                    const P_ele = V * I;
+                    const P_util = P_ele * eta_m;
+                    const P_exigida = (taxa * E_e) / EFICIENCIA_REDUTOR;
+                    const rot_final = RPM_BASE / red;
+                    const T_disp = (P_util * EFICIENCIA_REDUTOR) / (rot_final * (Math.PI / 30));
+                    
+                    rotacaoFinalGlobal = rot_final;
+                    isStalled = P_util < P_exigida;
+
+                    let statusBox = "";
+                    if (!isStalled) {
+                        statusBox = "<div class='alert alert-success'><strong>✅ SISTEMA OPERANDO LISO</strong><br><br>A potência exigida para fraturar o material é de <strong>" + P_exigida.toFixed(1) + " Watts</strong>, o que está dentro da margem de segurança da sua potência útil de <strong>" + P_util.toFixed(1) + " Watts</strong>.</div>";
+                    } else {
+                        statusBox = "<div class='alert alert-error'><strong>❌ MOTOR EM ESTOL (TRAVADO)</strong><br><br>A potência exigida para fraturar o material (<strong>" + P_exigida.toFixed(1) + " Watts</strong>) é superior à potência útil disponível no eixo (<strong>" + P_util.toFixed(1) + " Watts</strong>). O material encavalou.</div>";
+                    }
+
+                    htmlEsquerdo = `
+                        <h3 style="color: #fff; margin-bottom: 15px;">Análise de Conversão de Energia</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Energia bruta puxada da bateria (Tensão x Corrente)."><div class="metric-label">Potência Elétrica Consumida</div><div class="metric-value">${P_ele.toFixed(1)} W</div></div>
+                            <div class="metric-card" title="Energia que sobreviveu à dissipação térmica do motor e está efetivamente girando o eixo."><div class="metric-label">Potência Útil Entregue ao Eixo</div><div class="metric-value">${P_util.toFixed(1)} W</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Análise de Força Bruta</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Força de torção máxima que o dente do rolo consegue aplicar no grão de NPK. Calculado dividindo a potência útil pela velocidade angular final."><div class="metric-label">Torque Disponível nos Rolos</div><div class="metric-value">${T_disp.toFixed(2)} N.m</div></div>
+                            <div class="metric-card" title="Velocidade física dos rolos após passar pelo redutor."><div class="metric-label">Rotação Final nos Rolos</div><div class="metric-value">${rot_final.toFixed(1)} RPM</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Status de Operação</h3>
+                        ${statusBox}
+                    `;
+
+                    htmlDireito = `
+                        <h3 style="color: #fff; margin-top: 0;">📚 Memorial de Cálculo</h3>
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
+                            <strong>Parâmetros Base Assumidos</strong><br>
+                            • Energia Específica (E<sub>e</sub>): ${E_e.toFixed(1)} J/g<br>
+                            • Eficiência Mecânica (&eta;<sub>redutor</sub>): ${(EFICIENCIA_REDUTOR*100).toFixed(0)}%<br>
+                            • Motor: ${RPM_BASE} RPM na base
+                        </div>
+                        <div class="memorial-item">
+                            <strong title="Conversão Eletromecânica básica. Clique para referência técnica sobre a eficiência de motores CC.">
+                                <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">1. Conversão Elétrica ➔ Mecânica 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{P_{elétrica}}{\\text{Potência Elétrica Consumida (Watts)}} = \\mathtip{V}{\\text{Tensão Nominal da Bateria (Volts)}} \\cdot \\mathtip{I}{\\text{Corrente Elétrica Aplicada (Amperes)}} $$
+                            $$ \\mathtip{P_{elétrica}}{\\text{Potência Elétrica (Watts)}} = ${V} \\cdot ${I.toFixed(1)} = ${P_ele.toFixed(1)}\\text{ W} $$
+                            $$ \\mathtip{P_{útil}}{\\text{Potência Útil (Watts) - Energia líquida no eixo mecânico}} = \\mathtip{P_{elétrica}}{\\text{Potência Elétrica}} \\cdot \\mathtip{\\eta_{motor}}{\\text{Eficiência do Motor - Rendimento descontando calor dissipado}} $$
+                            $$ \\mathtip{P_{útil}}{\\text{Potência Útil (Watts)}} = ${P_ele.toFixed(1)} \\cdot ${eta_m.toFixed(2)} = ${P_util.toFixed(1)}\\text{ W} $$
+                        </div>
+                        <div class="memorial-item yellow">
+                            <strong title="Teoria da Cominuição (Trituração) e Bond Work Index. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">2. Demanda do Material (Fratura) 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{P_{exigida}}{\\text{Potência Mecânica Exigida (Watts) - Força necessária para moagem}} = \\frac{\\mathtip{\\text{Taxa de Moagem}}{\\text{Vazão de material na boca do triturador (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica de Fratura (J/g) - Trabalho empírico para o grão romper}}}{\\mathtip{\\eta_{redutor}}{\\text{Eficiência do Redutor Planetário}}} $$
+                            $$ \\mathtip{P_{exigida}}{\\text{Potência Exigida (Watts)}} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} = ${P_exigida.toFixed(1)}\\text{ W} $$
+                        </div>
+                        <div class="memorial-item green">
+                            <strong title="A relação direta entre Potência Angular, Torque e Rotação. Clique para referência.">
+                                <a href="https://www.engineeringtoolbox.com/work-torque-d_1377.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Cinemática e Torque 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{N_{final}}{\\text{Rotação Final nos Rolos (RPM)}} = \\frac{\\mathtip{\\text{RPM Base}}{\\text{Rotação de base informada pelo fabricante do motor}}}{\\mathtip{\\text{Redução}}{\\text{Relação da caixa planetária}}} $$
+                            $$ \\mathtip{N_{final}}{\\text{Rotação Final (RPM)}} = \\frac{${RPM_BASE}}{${red}} = ${rot_final.toFixed(1)}\\text{ RPM} $$
+                            $$ \\mathtip{T_{disp}}{\\text{Torque Disponível (N.m) - Força de torção nas estrias do rolo}} = \\frac{\\mathtip{P_{útil}}{\\text{Potência Útil (Watts)}} \\cdot \\mathtip{\\eta_{redutor}}{\\text{Eficiência Mecânica}}}{\\mathtip{\\omega_{final}}{\\text{Velocidade Angular Final (rad/s)}}} $$
+                            $$ \\mathtip{T_{disp}}{\\text{Torque Disponível (N.m)}} = \\frac{${P_util.toFixed(1)} \\cdot ${EFICIENCIA_REDUTOR}}{(${rot_final.toFixed(1)} \\cdot \\frac{\\pi}{30})} = ${T_disp.toFixed(2)}\\text{ N.m} $$
+                        </div>
+                    `;
+
+                } else {
+                    dom.lblCorrente.innerText = "Corrente Máxima Suportada (A)";
+
+                    const P_mec_exigida = (taxa * E_e) / EFICIENCIA_REDUTOR;
+                    const P_ele_exigida = P_mec_exigida / eta_m;
+                    const I_exigida = P_ele_exigida / V;
+                    const P_ele_consumida = V * I;
+                    const P_util_disp = P_ele_consumida * eta_m;
+                    const rot_final = RPM_BASE / red;
+                    const T_disp = (P_util_disp * EFICIENCIA_REDUTOR) / (rot_final * (Math.PI / 30));
+                    
+                    rotacaoFinalGlobal = rot_final;
+                    const margem_queima = I * 1.2;
+                    isStalled = I_exigida > margem_queima; // Trava física apenas no limite destrutivo do motor
+                    const delta = I_exigida - I;
+
+                    let statusBox = "";
+                    if (I_exigida > I) {
+                        if (I_exigida > margem_queima) {
+                            statusBox = "<div class='alert alert-error'><strong>🔥 RISCO CRÍTICO DE INCÊNDIO (MOTOR QUEIMADO)</strong><br><br>Para não travar os rolos trituradores, o motor tentará sugar <strong>" + I_exigida.toFixed(1) + " Amperes</strong> da fonte. Como o enrolamento foi projetado para apenas <strong>" + I.toFixed(1) + " A</strong>, o calor derreterá instantaneamente o verniz das bobinas, causando curto-circuito.</div>";
+                        } else {
+                            statusBox = "<div class='alert alert-warning'><strong>⚠️ SOBRECARGA TÉRMICA SEVERA</strong><br><br>A corrente exigida (<strong>" + I_exigida.toFixed(1) + " A</strong>) ultrapassou o limite contínuo (<strong>" + I.toFixed(1) + " A</strong>). O equipamento está trabalhando em sobrecarga severa. Risco de degradação térmica.</div>";
+                        }
+                    } else {
+                        statusBox = "<div class='alert alert-success'><strong>✅ OPERAÇÃO ESTÁVEL E FRIA</strong><br><br>A demanda mecânica nos rolos gera um esforço elétrico de apenas <strong>" + I_exigida.toFixed(1) + " A</strong>, o que está perfeitamente dentro da capacidade contínua de <strong>" + I.toFixed(1) + " A</strong>. Operação segura.</div>";
+                    }
+
+                    htmlEsquerdo = `
+                        <h3 style="color: #fff; margin-bottom: 15px;">Análise de Conversão de Energia</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Energia total circulando no sistema no limite da corrente estipulada."><div class="metric-label">Potência Elétrica Consumida</div><div class="metric-value">${P_ele_consumida.toFixed(1)} W</div></div>
+                            <div class="metric-card" title="Potência mecânica máxima que o motor consegue entregar antes de queimar."><div class="metric-label">Potência Útil Entregue ao Eixo</div><div class="metric-value">${P_util_disp.toFixed(1)} W</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Análise de Demanda de Corrente</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Como o motor DC tenta manter o torque variando a corrente, esta é a Amperagem real que a pedra exige do sistema para quebrar. Se for maior que a Etiqueta, o motor queima.">
+                                <div class="metric-label">Corrente Exigida para Moer</div>
+                                <div class="metric-value">${I_exigida.toFixed(1)} A</div>
+                                <div class="metric-delta ${delta > 0 ? 'delta-red' : 'delta-green'}">${delta > 0 ? '↑ ' + delta.toFixed(1) + ' A acima do limite' : '↓ Seguro'}</div>
+                            </div>
+                            <div class="metric-card" title="Limite térmico do fabricante (Amperes de placa)."><div class="metric-label">Corrente Máxima (Etiqueta)</div><div class="metric-value">${I.toFixed(1)} A</div></div>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Torque de Estol referencial. Acima deste torque, a amperagem ultrapassa o limite térmico."><div class="metric-label">Torque Máximo de Trabalho</div><div class="metric-value">${T_disp.toFixed(2)} N.m</div></div>
+                            <div class="metric-card" title="Velocidade cinemática na ponta do eixo triturador."><div class="metric-label">Rotação Final nos Rolos</div><div class="metric-value">${rot_final.toFixed(1)} RPM</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Integridade do Sistema</h3>
+                        ${statusBox}
+                    `;
+
+                    htmlDireito = `
+                        <h3 style="color: #fff; margin-top: 0;">📚 Memorial de Cálculo Inverso</h3>
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
+                            <strong>Parâmetros Base Assumidos</strong><br>
+                            • Energia Específica (E<sub>e</sub>): ${E_e.toFixed(1)} J/g<br>
+                            • Eficiência Mecânica (&eta;<sub>redutor</sub>): ${(EFICIENCIA_REDUTOR*100).toFixed(0)}%<br>
+                            • Motor: ${RPM_BASE} RPM na base
+                        </div>
+                        <div class="memorial-item yellow">
+                            <strong title="Trabalho mecânico de esmagamento. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">1. Demanda Mecânica (Rolos) 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica (Watts) - Trabalho real demandado para esmagar os grãos}} = \\frac{\\mathtip{\\text{Taxa de Moagem}}{\\text{Vazão Alvo (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica do Material}}}{\\mathtip{\\eta_{redutor}}{\\text{Eficiência da caixa planetária}}} $$
+                            $$ \\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica Exigida}} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} = ${P_mec_exigida.toFixed(1)}\\text{ W} $$
+                        </div>
+                        <div class="memorial-item red">
+                            <strong title="Demanda mecânica refletida na bobina elétrica. Clique para referência.">
+                                <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Reflexo Elétrico (Tomada) 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica (Watts) - O que o moinho tentará drenar da bateria para não travar}} = \\frac{\\mathtip{P_{mec\\_exigida}}{\\text{Potência Mecânica Demandada}}}{\\mathtip{\\eta_{motor}}{\\text{Eficiência Eletromecânica do Motor}}} $$
+                            $$ \\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica Exigida}} = \\frac{${P_mec_exigida.toFixed(1)}}{${eta_m.toFixed(2)}} = ${P_ele_exigida.toFixed(1)}\\text{ W} $$
+                            $$ \\mathtip{I_{exigida}}{\\text{Corrente Exigida (Amperes) - O fluxo real de energia puxado pela placa}} = \\frac{\\mathtip{P_{ele\\_exigida}}{\\text{Potência Elétrica Exigida}}}{\\mathtip{V}{\\text{Tensão da Bateria}}} = \\frac{${P_ele_exigida.toFixed(1)}}{${V}} = ${I_exigida.toFixed(1)}\\text{ A} $$
+                        </div>
+                        <div class="memorial-item">
+                            <strong title="Conceito físico termodinâmico fundamental. Clique para aprofundar na Lei de Joule.">
+                                <a href="https://www.electrical4u.com/joules-law-d_1961.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Risco de Queima (Lei de Joule) 🔗</a>
+                            </strong><br>
+                            <p style="margin-bottom: 15px; margin-top: 10px;">O calor gerado (Q) é proporcional ao <strong>quadrado</strong> da corrente elétrica (Q = I&sup2; &middot; R &middot; t). Ao saltar a exigência de <strong>${I.toFixed(1)} A</strong> para <strong>${I_exigida.toFixed(1)} A</strong>, a energia térmica dissipada na carcaça do motor cresce de forma brutal e exponencial, derretendo instantaneamente o verniz protetor do cobre.</p>
+                            $$ \\require{action} \\mathtip{Q}{\\text{Calor Gerado (Joules) - Energia térmica total dissipada no enrolamento}} = \\mathtip{I_{exigida}}{\\text{Corrente Elétrica Real (A)}}^2 \\cdot \\mathtip{R}{\\text{Resistência da Bobina (Ohms)}} \\cdot \\mathtip{t}{\\text{Tempo (s)}} $$
+                        </div>
+                    `;
+                }
+
+                dom.painelEsquerdo.innerHTML = htmlEsquerdo;
+
+                // --- DOUBLE BUFFERING AVANÇADO (DOM NODES + PROMISE QUEUE) ---
+                if (mathJaxTimer) clearTimeout(mathJaxTimer);
+                mathJaxTimer = setTimeout(function() {
+                    // Cria uma "tela fantasma" na memória
+                    const bufferInvisivel = document.createElement('div');
+                    bufferInvisivel.innerHTML = htmlDireito;
+                    
+                    if (window.MathJax && MathJax.typesetPromise) {
+                        // Cria uma fila para garantir que o MathJax não se atropele no arrasto rápido
+                        if (!window.mjPromise) window.mjPromise = Promise.resolve();
+                        
+                        window.mjPromise = window.mjPromise.then(function() {
+                            // Manda renderizar a matemática na tela fantasma primeiro
+                            return MathJax.typesetPromise([bufferInvisivel]).then(function() {
+                                // Só quando estiver 100% pronto e desenhado, esvazia o painel
+                                dom.painelDireito.innerHTML = "";
+                                // Move os blocos físicos (estilizados) para a tela real
+                                while (bufferInvisivel.firstChild) {
+                                    dom.painelDireito.appendChild(bufferInvisivel.firstChild);
+                                }
+                            });
+                        }).catch(function(err){ console.log(err); });
+                    } else {
+                        dom.painelDireito.innerHTML = htmlDireito;
+                    }
+                }, 80); // 80ms: o equilíbrio perfeito entre responsividade visual e alívio da GPU
+            }
+
+            // --- LÓGICA DO DISTRIBUIDOR DE SÓLIDOS ---
+            let mathJaxTimerDist = null;
+            function atualizarDistribuidor() {
+                const modoDistElement = document.querySelector('input[name="modo_dist"]:checked');
+                const modoDist = modoDistElement ? modoDistElement.value : "1";
+                
+                let htmlEsquerdo = "";
+                let htmlDireito = "";
+
+                if (modoDist === "1") {
+                    // MODO 1: DOSAGEM E ARRASTE PNEUMÁTICO
+                    dom.distGrpModo1.classList.remove('hidden');
+                    dom.distGrpModo2.classList.add('hidden');
+                    
+                    canvasDist.style.display = 'none';
+                    ativarAnimacaoDist = false;
+
+                    // Atualiza textos do DOM
+                    document.getElementById('val_dist_taxa').innerText = dom.distTaxa.value;
+                    document.getElementById('val_dist_veltrator').innerText = parseFloat(dom.distVelTrator.value).toFixed(1);
+                    document.getElementById('val_dist_largura').innerText = parseFloat(dom.distLargura.value).toFixed(2);
+                    document.getElementById('val_dist_densidade').innerText = parseFloat(dom.distDensidade.value).toFixed(2);
+                    document.getElementById('val_dist_vol').innerText = dom.distVol.value;
+                    document.getElementById('val_dist_tensao').innerText = dom.distTensao.value;
+                    document.getElementById('val_dist_corrente').innerText = parseFloat(dom.distCorrente.value).toFixed(1);
+                    document.getElementById('val_dist_vazaoturbina').innerText = parseFloat(dom.distVazaoTurbina.value).toFixed(1);
+                    document.getElementById('val_dist_diametro').innerText = dom.distDiametro.value;
+
+                    // Atualiza DOM
+                    document.getElementById('val_dist_linhas').innerText = dom.distLinhas.value;
+                    document.getElementById('val_dist_comprimento').innerText = parseFloat(dom.distComprimento.value).toFixed(1);
+
+                    // Captura de Variáveis
+                    const n_linhas = parseInt(dom.distLinhas.value);
+                    const L_tubo_m = parseFloat(dom.distComprimento.value);
+                    const taxa_ha = parseFloat(dom.distTaxa.value);
+                    const v_trator = parseFloat(dom.distVelTrator.value);
+                    const largura = parseFloat(dom.distLargura.value); // Largura de UMA linha
+                    const rho_s = parseFloat(dom.distDensidade.value);
+                    const V_r = parseFloat(dom.distVol.value);
+                    const V_motor = parseFloat(dom.distTensao.value);
+                    const I_max = parseFloat(dom.distCorrente.value);
+                    const Q_turbina_m3min = parseFloat(dom.distVazaoTurbina.value);
+                    const D_mm = parseFloat(dom.distDiametro.value);
+                    const rho_a = 1.2;
+
+                    // 1. Agronômica (Por Linha)
+                    const m_s_kgh_linha = (taxa_ha * v_trator * largura) / 10;
+                    const N_r = (m_s_kgh_linha * 1000) / (V_r * rho_s * 60);
+
+                    // 2. Elétrica
+                    const P_util_max = V_motor * I_max * 0.75; 
+                    const m_s_gs = m_s_kgh_linha * (1000 / 3600); 
+                    const P_mec_req = (m_s_gs * 0.2) / EFICIENCIA_REDUTOR;
+
+                    // 3. Fluidodinâmica: Divisão de Fluxo, Darcy-Weisbach e Curva da Bomba
+                    const D_m = D_mm / 1000;
+                    const Area = (Math.PI * Math.pow(D_m, 2)) / 4;
+                    
+                    // A turbina joga o ar em um manifold (cabeçote) que divide para as mangueiras
+                    const Q_linha_m3min = Q_turbina_m3min / n_linhas; 
+                    const v_a_nom = (Q_linha_m3min / 60) / Area; // Vel. Ideal sem atrito
+                    
+                    const m_a_kgh_teorico = Q_linha_m3min * 60 * rho_a;
+                    const SLR_teorico = m_s_kgh_linha / m_a_kgh_teorico;
+
+                    // Perda de Carga (ΔP em Pascal) gerada pela mangueira + bloqueio do adubo
+                    const fator_atrito = 0.02; // Fator fixo para mangueiras de PU Lisas
+                    const delta_P = fator_atrito * (L_tubo_m / D_m) * ((rho_a * Math.pow(v_a_nom, 2)) / 2) * (1 + SLR_teorico);
+
+                    // Curva Operacional da Turbina Agrícola (Estol máximo em 15.000 Pa ou 150 mbar)
+                    // Quanto maior a pressão imposta pela mangueira, menos vento a turbina consegue empurrar
+                    let fator_perda = 1 - (delta_P / 15000); 
+                    if (fator_perda < 0) fator_perda = 0.01; // Trava matemática para não inverter a direção
+                    
+                    const v_a_real = v_a_nom * fator_perda; // Velocidade final na ponta da mangueira
+                    const SLR_real = m_s_kgh_linha / (m_a_kgh_teorico * fator_perda); // SLR piora se falta ar
+
+                    let statusEletrico = "";
+                    if (P_mec_req > P_util_max) {
+                        statusEletrico = `<div class='alert alert-error'><strong>❌ MOTOR TRAVADO (SOBRECARGA)</strong><br>O motor elétrico precisa fornecer <strong>${P_mec_req.toFixed(1)} W</strong>, mas ele queima em <strong>${P_util_max.toFixed(1)} W</strong>.</div>`;
+                    } else {
+                        statusEletrico = `<div class='alert alert-success'><strong>✅ MOTOR DIMENSIONADO</strong><br>O esforço puxará apenas <strong>${P_mec_req.toFixed(1)} W</strong> de torque seguro.</div>`;
+                    }
+
+                    let statusPneumatico = "";
+                    if (delta_P >= 15000) {
+                        statusPneumatico = `<div class='alert alert-error' style="margin-top: 10px;"><strong>❌ ESTOL DA TURBINA (Pressão: ${(delta_P/100).toFixed(0)} mbar)</strong><br>O atrito de <strong>${L_tubo_m} metros</strong> de tubo esmagou o fluxo da turbina. O ar simplesmente parou.</div>`;
+                    } else if (v_a_real < 15) {
+                        statusPneumatico = `<div class='alert alert-error' style="margin-top: 10px;"><strong>❌ RISCO DE ENTUPIMENTO DE LINHA</strong><br>A velocidade real caiu para <strong>${v_a_real.toFixed(1)} m/s</strong> (perda de ${((1-fator_perda)*100).toFixed(0)}% por atrito). A semente vai decantar.</div>`;
+                    } else if (SLR_real > 8) {
+                        statusPneumatico = `<div class='alert alert-error' style="margin-top: 10px;"><strong>❌ AFOGAMENTO DA LINHA (SLR: ${SLR_real.toFixed(2)})</strong><br>A perda de vento deixou o ar muito saturado com sólido. Aumente a turbina ou encurte o tubo.</div>`;
+                    } else {
+                        statusPneumatico = `<div class='alert alert-success' style="margin-top: 10px;"><strong>✅ ARRASTE EFICIENTE (Pressão: ${(delta_P/100).toFixed(0)} mbar)</strong><br>O vento chega na ponta a saudáveis <strong>${v_a_real.toFixed(1)} m/s</strong> (SLR: ${SLR_real.toFixed(2)}).</div>`;
+                    }
+
+                    htmlEsquerdo = `
+                        <h3 style="color: #fff; margin-bottom: 15px;">Dinâmica de Dosagem Agronômica</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Velocidade exigida pela controladora do trator."><div class="metric-label">Rotação do Rolo</div><div class="metric-value">${N_r.toFixed(1)} RPM</div></div>
+                            <div class="metric-card" title="Massa de material despejado em UMA única linha."><div class="metric-label">Taxa Mássica (Por Linha)</div><div class="metric-value">${m_s_kgh_linha.toFixed(1)} kg/h</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Dinâmica dos Fluidos (Turbina e Tubo)</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="A velocidade se não houvesse resistência (fricção) no cano."><div class="metric-label">Vento Ideal Teórico</div><div class="metric-value">${v_a_nom.toFixed(1)} m/s</div></div>
+                            <div class="metric-card" title="A velocidade real que chega na ponta da mangueira após sofrer a perda de carga mecânica."><div class="metric-label">Vento Real Restante</div><div class="metric-value">${v_a_real.toFixed(1)} m/s</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Status do Sistema</h3>
+                        ${statusEletrico}
+                        ${statusPneumatico}
+                    `;
+
+                    htmlDireito = `
+                        <h3 style="color: #fff; margin-top: 0;">📚 Memorial da Semeadura</h3>
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
+                            <strong>Física Fluido-Mecânica Aplicada</strong><br>
+                            • Tubos lisos de PU (Fator de Atrito &lambda;): 0.02<br>
+                            • Pressão Estática Máxima do Soprador (P<sub>max</sub>): 15.000 Pa
+                        </div>
+                        <div class="memorial-item green">
+                            <strong title="Divisão do escoamento. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Continuity_equation" target="_blank" style="color: inherit; text-decoration: underline;">1. Divisão Volumétrica de Fluxo (Continuidade) 🔗</a>
+                            </strong><br>
+                            <p style="margin: 10px 0; font-size: 0.9em;">A turbina injeta ar num coletor distribuidor. A vazão se divide pelas ${n_linhas} linhas da máquina.</p>
+                            $$ \\require{action} \\mathtip{Q_{linha}}{\\text{Vazão m³/min}} = \\frac{\\mathtip{Q_{turbina}}{\\text{Vazão Total}}}{\\mathtip{N}{\\text{Número de Tubos}}} = \\frac{${Q_turbina_m3min}}{${n_linhas}} = ${Q_linha_m3min.toFixed(2)} \\text{ m}^3\\text{/min} $$
+                            $$ \\mathtip{v_{nom}}{\\text{Velocidade Nominal}} = \\frac{Q_{linha} / 60}{\\mathtip{A}{\\text{Área Transversal}}} = ${v_a_nom.toFixed(1)} \\text{ m/s} $$
+                        </div>
+                        <div class="memorial-item yellow">
+                            <strong title="Queda de pressão em tubos com atrito. Clique para referência.">
+                                <a href="https://www.engineeringtoolbox.com/darcy-weisbach-equation-d_646.html" target="_blank" style="color: inherit; text-decoration: underline;">2. Perda de Carga (Darcy-Weisbach) 🔗</a>
+                            </strong><br>
+                            <p style="margin: 10px 0; font-size: 0.9em;">Os ${L_tubo_m} metros de tubo estreito criam uma enorme resistência mecânica contra a parede, forçando o compressor.</p>
+                            $$ \\require{action} \\mathtip{\\Delta P}{\\text{Pressão de Resistência (Pascal)}} = \\mathtip{\\lambda}{\\text{Atrito do TUbo}} \\cdot \\frac{\\mathtip{L}{\\text{Comprimento}}}{\\mathtip{D}{\\text{Diâmetro}}} \\cdot \\frac{\\mathtip{\\rho_a v_{nom}^2}{2}}{\\text{Pressão Dinâmica}} \\cdot \\mathtip{(1 + \\mu)}{\\text{Peso da Semente}} $$
+                            $$ \\mathtip{\\Delta P}{\\text{Pressão}} = 0.02 \\cdot \\frac{${L_tubo_m}}{${D_m}} \\cdot \\frac{1.2 \\cdot ${v_a_nom.toFixed(1)}^2}{2} \\cdot (1 + ${SLR_teorico.toFixed(2)}) = ${delta_P.toFixed(0)} \\text{ Pa} $$
+                        </div>
+                        <div class="memorial-item red">
+                            <strong title="Curvas de bombas e ventiladores centrífugos. Clique para referência.">
+                                <a href="https://www.engineeringtoolbox.com/fan-performance-characteristics-d_48.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Curva da Turbina e Velocidade Efetiva 🔗</a>
+                            </strong><br>
+                            <p style="margin: 10px 0; font-size: 0.9em;">Quanto maior o &Delta;P imposto pelo tubo, menor a eficiência volumétrica que a turbina consegue manter.</p>
+                            $$ \\require{action} \\mathtip{v_{real}}{\\text{Vento Real na Ponta da Mangueira}} = \\mathtip{v_{nom}}{\\text{Vento Teórico}} \\cdot \\left( 1 - \\frac{\\mathtip{\\Delta P}{\\text{Perda de Carga}}}{\\mathtip{P_{max}}{\\text{Capacidade de Pressão de Estol da Turbina}}} \\right) $$
+                            $$ \\mathtip{v_{real}}{\\text{Vento Real}} = ${v_a_nom.toFixed(1)} \\cdot \\left( 1 - \\frac{${delta_P.toFixed(0)}}{15000} \\right) = ${v_a_real.toFixed(1)} \\text{ m/s} $$
+                        </div>
+                    `;
+
+                } else {
+                    // MODO 2: CINEMÁTICA DE ESPALHAMENTO - COM MATTER.JS
+                    dom.distGrpModo1.classList.add('hidden');
+                    dom.distGrpModo2.classList.remove('hidden');
+                    
+                    // Mostrar canvas e iniciar animação Matter.js
+                    canvasDist.style.display = 'block';
+                    ativarAnimacaoDosador = false; 
+                    ativarAnimacaoDist = true;
+                    redimensionarCanvasDist();
+                    
+                    // Inicializar Motor de Física
+                    const v0_queda = parseFloat(dom.distV0.value) || 12;
+                    const theta_angle = parseFloat(dom.distAngulo.value) || 30;
+                    const h_altura = parseFloat(dom.distAltura.value) || 0.8;
+                    const e_coef = parseFloat(dom.distCr.value) || 0.6;
+                    
+                    inicializarFisicaDistribuidor(theta_angle, v0_queda, h_altura, e_coef);
+
+                    document.getElementById('val_dist_v0').innerText = parseFloat(dom.distV0.value).toFixed(1);
+                    document.getElementById('val_dist_angulo').innerText = dom.distAngulo.value;
+                    document.getElementById('val_dist_raio').innerText = dom.distRaio.value;
+                    document.getElementById('val_dist_largchapa').innerText = dom.distLargChapa.value;
+                    document.getElementById('val_dist_diamtubo2').innerText = dom.distDiamTubo2.value;
+                    document.getElementById('val_dist_altura').innerText = parseFloat(dom.distAltura.value).toFixed(1);
+                    document.getElementById('val_dist_cr').innerText = parseFloat(dom.distCr.value).toFixed(2);
+
+                    const largura_chapa_mm = parseFloat(dom.distLargChapa.value) || 100; // Usado APENAS visualmente no canvas
+                    const diam_tubo_mm = parseFloat(dom.distDiamTubo2.value) || 40; 
+                    const raio_mm = parseFloat(dom.distRaio.value) || 100;    
+                    const v0_vertical = parseFloat(dom.distV0.value) || 12;  
+                    const theta_deg = parseFloat(dom.distAngulo.value) || 30;
+                    const h = parseFloat(dom.distAltura.value) || 0.8;        
+                    const e_rest = parseFloat(dom.distCr.value) || 0.6;       
+                    const g = 9.81;
+                    
+                    const diam_tubo_m = diam_tubo_mm / 1000;
+                    const raio_m = raio_mm / 1000;
+
+                    // FÍSICA DE REFLEXÃO ESPECULAR (FRONTAL XY)
+                    const theta_rad = theta_deg * (Math.PI / 180);
+                    const v_refl = v0_vertical * e_rest;
+                    const angulo_saida_rad = 2 * theta_rad - (Math.PI / 2);
+                    
+                    const v_x = v_refl * Math.cos(angulo_saida_rad); 
+                    const v_y = v_refl * Math.sin(angulo_saida_rad); 
+
+                    // CINEMÁTICA DE QUEDA DA ALTURA h (Bhaskara)
+                    const discriminante = Math.pow(v_y, 2) + 2 * g * h;
+                    const t_queda = (v_y + Math.sqrt(discriminante)) / g;
+                    const alcance_abs = Math.abs(v_x * t_queda);
+
+                    // CÁLCULO FÍSICO DO ESPALHAMENTO TRANSVERSAL (EIXO Z - LATERAL)
+                    // A largura física da chapa não afeta a matemática, exceto estruturalmente.
+                    // O desvio lateral máximo é ditado APENAS pelo diâmetro do tubo.
+                    const limite_seno = Math.min((diam_tubo_m / 2) / raio_m, 1);
+                    const gama_max_rad = Math.asin(limite_seno);
+                    const gama_max_deg = (gama_max_rad * 180) / Math.PI;
+                    
+                    const vz_max = v_refl * Math.sin(gama_max_rad);
+                    const largura_faixa = (2 * vz_max * t_queda) + diam_tubo_m; 
+                    const angulo_saida_deg = (angulo_saida_rad * 180) / Math.PI;
+
+                    let statusCinematica = "";
+                    if (alcance_abs < 0.02) {
+                        statusCinematica = `<div class='alert alert-warning'><strong>⚠️ ESPALHAMENTO VERTICAL (QUEDA LIVRE)</strong><br><br>A inclinação da chapa (${theta_deg}°) está desviando a semente quase completamente para baixo (ângulo de saída: ${angulo_saida_deg.toFixed(1)}°). O material formará uma fileira grossa e concentrada no sulco.</div>`;
+                    } else if (Math.abs(angulo_saida_deg) > 45) {
+                        statusCinematica = `<div class='alert alert-warning'><strong>⚠️ DEFLEXÃO EXCESSIVA PARA CIMA</strong><br><br>O ângulo do defletor (${theta_deg}°) está lançando a semente para cima (ângulo: ${angulo_saida_deg.toFixed(1)}°). Alto risco de deriva pelo vento do ambiente externo.</div>`;
+                    } else {
+                        statusCinematica = `<div class='alert alert-success'><strong>✅ DISTRIBUIÇÃO PARABÓLICA ATIVA</strong><br><br>Semente lançada frontalmente por <strong>${alcance_abs.toFixed(2)} m</strong> e espalhada lateralmente por causa do arco em uma faixa de <strong>${largura_faixa.toFixed(2)} m</strong>. Boa uniformidade.</div>`;
+                    }
+
+                    htmlEsquerdo = `
+                        <h3 style="color: #fff; margin-bottom: 15px;">Mecânica do Impacto (Defletor)</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Velocidade vertical da semente ao atingir o defletor (após sair do tubo pneumático)."><div class="metric-label">Velocidade de Queda (V₀)</div><div class="metric-value">${v0_vertical.toFixed(1)} m/s</div></div>
+                            <div class="metric-card" title="Velocidade da semente imediatamente após bater na chapa, descontada a perda pelo coeficiente de restituição."><div class="metric-label">Velocidade Refletida (Vᵣ)</div><div class="metric-value">${v_refl.toFixed(1)} m/s</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Análise Vetorial</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Ângulo em relação à horizontal com que a semente é lançada pelo centro da chapa."><div class="metric-label">Ângulo Saída Frontal</div><div class="metric-value">${angulo_saida_deg.toFixed(1)}°</div></div>
+                            <div class="metric-card" title="Desvio lateral tangencial na borda da chapa gerado pelo Raio de Curvatura de ${raio_mm}mm."><div class="metric-label">Ângulo Curva Máx. (&gamma;)</div><div class="metric-value">${gama_max_deg.toFixed(1)}°</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Projeção Cinemática no Solo</h3>
+                        <div class="metrics-row">
+                            <div class="metric-card" title="Tempo total de voo da semente."><div class="metric-label">Tempo de Queda</div><div class="metric-value">${t_queda.toFixed(3)} s</div></div>
+                            <div class="metric-card" title="Alcance longitudinal máximo gerado na linha da máquina (Eixo X)."><div class="metric-label">Alcance Longitudinal</div><div class="metric-value">${alcance_abs.toFixed(2)} m</div></div>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-card" style="grid-column: span 2;" title="A abertura total da faixa no solo provocada pelo espalhamento tangencial (Eixo Z)."><div class="metric-label">Largura da Faixa Distribuída (Espalhamento Z)</div><div class="metric-value">${largura_faixa.toFixed(2)} m</div></div>
+                        </div>
+                        <h3 style="color: #fff; margin-bottom: 15px;">Perfil de Distribuição</h3>
+                        ${statusCinematica}
+                    `;
+
+                    htmlDireito = `
+                        <h3 style="color: #fff; margin-top: 0;">📚 Memorial da Cinemática</h3>
+                        <div style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
+                            <strong>Física de Projéteis Assumida</strong><br>
+                            • Tubo de descida estritamente vertical.<br>
+                            • Inclinação Frontal do Defletor: ${theta_deg}°<br>
+                            • Diâmetro do Tubo (D): ${diam_tubo_mm} mm<br>
+                            • Raio de Curvatura Transversal (R): ${raio_mm} mm
+                        </div>
+                        <div class="memorial-item">
+                            <strong title="Coeficiente de restituição e elasticidade. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Coefficient_of_restitution" target="_blank" style="color: inherit; text-decoration: underline;">1. Reflexão no Defletor Frontal (XY) 🔗</a>
+                            </strong><br>
+                            <p style="margin: 10px 0; font-size: 0.9em;">Desvio baseado na lei da reflexão especular.</p>
+                            $$ \\require{action} \\mathtip{\\alpha}{\\text{Ângulo de Saída Frontal}} = 2 \\cdot \\mathtip{\\theta}{\\text{Ângulo da Chapa}} - 90° = ${angulo_saida_deg.toFixed(1)}° $$
+                            $$ \\mathtip{V_r}{\\text{Velocidade Pós-Choque}} = \\mathtip{V_0}{\\text{Vel. Queda}} \\cdot \\mathtip{e}{\\text{Restituição}} = ${v_refl.toFixed(2)} \\text{ m/s} $$
+                        </div>
+                        <div class="memorial-item yellow">
+                            <strong title="Equações do movimento e leis de Newton. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Equations_of_motion" target="_blank" style="color: inherit; text-decoration: underline;">2. Equação Horária da Posição Vertical 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{V_y}{\\text{Velocidade Y Inicial}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\sin(\\alpha) = ${v_y.toFixed(2)} \\text{ m/s} $$
+                            $$ \\mathtip{y(t)}{\\text{Posição}} = \\mathtip{h}{\\text{Altura}} + \\mathtip{V_y}{\\text{Vel. Inic.}} \\cdot t - \\frac{\\mathtip{g}{\\text{Grav.}}}{2}t^2 $$
+                            $$ \\mathtip{t}{\\text{Tempo (Raiz de Bhaskara para y=0)}} = ${t_queda.toFixed(3)} \\text{ s} $$
+                        </div>
+                        <div class="memorial-item green">
+                            <strong title="Cinemática bidimensional de projéteis. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Projectile_motion" target="_blank" style="color: inherit; text-decoration: underline;">3. Alcance Longitudinal (Eixo X) 🔗</a>
+                            </strong><br>
+                            $$ \\require{action} \\mathtip{V_x}{\\text{Velocidade X Inicial}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\cos(\\alpha) = ${v_x.toFixed(2)} \\text{ m/s} $$
+                            $$ \\mathtip{D_x}{\\text{Distância Frontal}} = \\mathtip{V_x}{\\text{Veloc. Horizontal}} \\cdot \\mathtip{t}{\\text{Tempo Voo}} = ${alcance_abs.toFixed(2)} \\text{ m} $$
+                        </div>
+                        <div class="memorial-item red">
+                            <strong title="Trigonometria de arcos e Sagitta. Clique para referência.">
+                                <a href="https://en.wikipedia.org/wiki/Radius_of_curvature" target="_blank" style="color: inherit; text-decoration: underline;">4. Espalhamento Transversal Geométrico (Eixo Z) 🔗</a>
+                            </strong><br>
+                            <p style="margin: 10px 0; font-size: 0.9em;">O ângulo tangencial da chapa que a semente "enxerga" é delimitado pelo diâmetro do tubo. As sementes extremas caem no máximo a D/2 do centro.</p>
+                            $$ \\require{action} \\mathtip{\\gamma}{\\text{Ângulo Tangencial Máximo}} = \\arcsin \\left( \\frac{\\mathtip{D_{tubo}/2}{\\text{Raio Interno do Tubo}}}{\\mathtip{R}{\\text{Raio de Curvatura (mm)}}} \\right) = ${gama_max_deg.toFixed(1)}° $$
+                            $$ \\mathtip{V_z}{\\text{Velocidade Máxima Lateral}} = \\mathtip{V_r}{\\text{Velocidade Refletida (m/s)}} \\cdot \\sin(\\gamma) = ${vz_max.toFixed(2)} \\text{ m/s} $$
+                            <p style="margin: 15px 0 10px 0; font-size: 0.9em; padding-left: 10px; border-left: 2px solid var(--error);"><strong>A Faixa Total</strong><br>A largura depositada no solo ($D_z$) é o somatório da abertura dinâmica (2 &times; Velocidade Lateral &times; Tempo) somada à própria largura da cortina original caindo do tubo.</p>
+                            $$ \\mathtip{D_z}{\\text{Largura Total no Solo}} = \\mathtip{D_{tubo}}{\\text{Cortina de Sementes}} + 2 \\cdot ( \\mathtip{V_z}{\\text{Vel. Lateral Z}} \\cdot \\mathtip{t}{\\text{Tempo de Queda}} ) = ${largura_faixa.toFixed(2)} \\text{ m} $$
+                        </div>
+                    `;
+                }
+                dom.painelEsqDist.innerHTML = htmlEsquerdo;
+
+                if (mathJaxTimerDist) clearTimeout(mathJaxTimerDist);
+                mathJaxTimerDist = setTimeout(function() {
+                    const buffer = document.createElement('div');
+                    buffer.innerHTML = htmlDireito;
+                    if (window.MathJax && MathJax.typesetPromise) {
+                        if (!window.mjPromiseDist) window.mjPromiseDist = Promise.resolve();
+                        window.mjPromiseDist = window.mjPromiseDist.then(function() {
+                            return MathJax.typesetPromise([buffer]).then(function() {
+                                dom.painelDirDist.innerHTML = "";
+                                while (buffer.firstChild) dom.painelDirDist.appendChild(buffer.firstChild);
+                            });
+                        }).catch(err => console.log(err));
+                    } else {
+                        dom.painelDirDist.innerHTML = htmlDireito;
+                    }
+                }, 80);
+            }
+
+            // --- LÓGICA DO CANVAS GEOMÉTRICO ---
+            function desenharRolo(x, y, raio, angulo, isEsquerdo) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angulo);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, raio, 0, Math.PI * 2);
+                ctx.fillStyle = '#21262d';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#8b949e';
+                ctx.stroke();
+
+                const numDentes = 14;
+                ctx.fillStyle = isStalled ? '#ff7b72' : '#58a6ff'; 
+                
+                for (let i = 0; i < numDentes; i++) {
+                    ctx.save();
+                    let teta = (i * Math.PI * 2) / numDentes;
+                    if (!isEsquerdo) teta += Math.PI / numDentes; 
+                    
+                    ctx.rotate(teta);
+                    ctx.beginPath();
+                    ctx.moveTo(raio - 2, -7);
+                    ctx.lineTo(raio + 14, 0); 
+                    ctx.lineTo(raio - 2, 7);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fillStyle = '#0d1117';
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#8b949e';
+                ctx.fillRect(-3, -18, 6, 8);
+
+                ctx.restore();
+            }
+            
+            function renderizar() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                let velAngular = 0;
+                if (!isStalled && rotacaoFinalGlobal > 0) {
+                    // Cálculo da velocidade real (rad/frame)
+                    velAngular = (rotacaoFinalGlobal * 2 * Math.PI) / 3600; 
+                    
+                    // Trava anti-ilusão de ótica
+                    // Garante que o dente nunca pule mais que a metade da distância até o próximo,
+                    // impedindo que o cérebro enxergue a engrenagem girando para fora.
+                    if (velAngular > 0.15) velAngular = 0.15;
+                }
+
+                // FÍSICA CORRETA DE MOAGEM (Puxando o material para o centro e para baixo)
+                anguloEsquerdo += velAngular; // Rolo esquerdo gira no sentido Horário (+)
+                anguloDireito -= velAngular;  // Rolo direito gira no sentido Anti-horário (-)
+
+                const centroX = canvas.width / 2;
+                const centroY = canvas.height / 2;
+                
+                desenharRolo(centroX - 102, centroY, 90, anguloEsquerdo, true);
+                desenharRolo(centroX + 102, centroY, 90, anguloDireito, false);
+
+                let taxaAtual = parseFloat(dom.taxaRange.value);
+                if(isNaN(taxaAtual)) taxaAtual = 0;
+
+                if (!isStalled && velAngular > 0) {
+                    const particulasPorFrame = Math.ceil(taxaAtual / 15);
+                    for(let i=0; i < particulasPorFrame; i++) {
+                        particulas.push({
+                            x: centroX - 40 + Math.random() * 80,
+                            y: 0,
+                            raio: 2 + Math.random() * 4,
+                            velY: 2 + Math.random() * 3
+                        });
+                    }
+                }
+
+                ctx.fillStyle = '#d29922'; 
+                for (let i = particulas.length - 1; i >= 0; i--) {
+                    let p = particulas[i];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if(!isStalled) {
+                        p.y += p.velY;
+                        if(p.y > centroY - 50) p.velY += 1.5; 
+                    }
+
+                    if (p.y > canvas.height) {
+                        particulas.splice(i, 1);
+                    }
+                }
+
+                requestAnimationFrame(renderizar);
+            }
+
+            // --- LÓGICA DE VISUALIZAÇÃO DO DISTRIBUIDOR (COM MATTER.JS) ---
+            function inicializarFisicaDistribuidor(theta_deg, v0, h_chapa, e_rest) {
+                // Verificar se Matter.js está pronto e disponível
+                if (!Engine || !World || !Bodies || !Body) {
+                    console.warn('Matter.js não disponível. Renderização manual será usada.');
+                    ativarAnimacaoDist = false;
+                    return false;
+                }
+                
+                try {
+                    // Destruir engine anterior se existir
+                    if (engineDist) {
+                        Engine.clear(engineDist);
+                    }
+                
+                // Criar novo engine
+                engineDist = Engine.create();
+                worldDist = engineDist.world;
+                worldDist.gravity.y = 9.81;
+                
+                particulasBodyDist = [];
+                tempoGeracaoSemente = 0;
+                
+                const centroX = canvasDist.width / 4;
+                const centroY = canvasDist.height * 0.7;
+                const theta_rad = theta_deg * (Math.PI / 180);
+                
+                // === CRIAR DEFLETOR (Body Estático Inclinado) ===
+                const comprimento = 200;
+                defletorBody = Bodies.rectangle(
+                    centroX, 
+                    centroY, 
+                    comprimento, 
+                    60, // ESPESSURA AUMENTADA PARA 60px para evitar tunelamento visual
+                    {
+                        isStatic: true,
+                        angle: theta_rad,
+                        friction: 0.5,
+                        restitution: e_rest,
+                        label: 'defletor',
+                        // Como a renderização customizada usa os vértices exatos, a chapa 
+                        // vai desenhar mais grossa no fundo, impedindo o fantasma.
+                    }
+                );
+                World.add(worldDist, defletorBody);
+                
+                // === CRIAR SOLO (Body Estático Horizontal no Fundo) ===
+                const soloY = centroY + (h_chapa * 120);
+                const solo = Bodies.rectangle(
+                    canvasDist.width / 2,
+                    soloY + 50,
+                    canvasDist.width * 2,
+                    100,
+                    {
+                        isStatic: true,
+                        friction: 1.0,
+                        restitution: 0.2,
+                        label: 'solo'
+                    }
+                );
+                World.add(worldDist, solo);
+                
+                // === CRIAR PAREDES LATERAIS E TETO (para não perder semente voando) ===
+                const paredeEsquerda = Bodies.rectangle(
+                    -50, 
+                    canvasDist.height / 2, 
+                    100, 
+                    canvasDist.height * 2,
+                    { isStatic: true }
+                );
+                const paredeDireita = Bodies.rectangle(
+                    canvasDist.width + 50, 
+                    canvasDist.height / 2, 
+                    100, 
+                    canvasDist.height * 2,
+                    { isStatic: true }
+                );
+                const teto = Bodies.rectangle(
+                    canvasDist.width / 2, 
+                    -500, 
+                    canvasDist.width * 2, 
+                    100,
+                    { isStatic: true }
+                );
+                World.add(worldDist, [paredeEsquerda, paredeDireita, teto]);
+                
+                ativarAnimacaoDist = true;  // Ativar renderização
+                console.log('Física do Distribuidor inicializada com Proteção de Tunelamento!');
+                return true;
+                } catch(err) {
+                    console.error('Erro ao inicializar física:', err);
+                    return false;
+                }
+            }
+
+            function criarSementeDistribuidor(v0, theta_deg) {
+                const centroX = canvasDist.width / 4;
+                const centroY = canvasDist.height * 0.7;
+                
+                // A semente tem liberdade de cair em qualquer parte "vazada" do tubo.
+                // Na nossa escala visual, 1 pixel = 1 milímetro. Fica perfeito.
+                const diam_tubo_mm = parseFloat(dom.distDiamTubo2.value) || 40;
+                
+                // Espalhamento em X (Frontal)
+                const x = centroX + (Math.random() - 0.5) * diam_tubo_mm; 
+                const y = centroY - 120;
+                
+                const semente = Bodies.circle(x, y, 5, {
+                    friction: 0.05, 
+                    frictionAir: 0.01, 
+                    restitution: 0.6,  
+                    density: 0.05, 
+                    slop: 0.05,
+                    label: 'semente'
+                });
+                
+                Body.setVelocity(semente, { x: 0, y: v0 * 0.8 }); 
+                World.add(worldDist, semente);
+                
+                particulasBodyDist.push({
+                    body: semente,
+                    raio: 5,
+                    // Espalhamento em Z (Lateral): semente cai aleatoriamente pelo diâmetro do tubo
+                    z: (Math.random() - 0.5) * diam_tubo_mm, 
+                    vz: 0, 
+                    hit: false, 
+                    criado: Date.now()
+                });
+            }
+
+            function renderizarDosador() {
+                if (!ativarAnimacaoDosador) {
+                    requestAnimationFrame(renderizarDosador);
+                    return;
+                }
+                
+                ctxDist.clearRect(0, 0, canvasDist.width, canvasDist.height);
+                
+                const centroX = canvasDist.width / 2;
+                const centroY = canvasDist.height / 2 - 20;
+                const rpm = parseFloat(dom.distRpm.value) || 45;
+                const velAr = parseFloat(dom.distVelar.value) || 25;
+                
+                // Limite óptico (Efeito Estroboscópico)
+                let rpmVisual = rpm;
+                if (rpmVisual > 60) rpmVisual = 60;
+                let velAngular = (rpmVisual * 2 * Math.PI) / 3600;
+                anguloDosador += velAngular;
+                
+                // === TUBO DE AR (Inferior) ===
+                ctxDist.fillStyle = '#161b22';
+                ctxDist.fillRect(centroX - 200, centroY + 50, canvasDist.width, 50);
+                ctxDist.strokeStyle = '#30363d';
+                ctxDist.lineWidth = 2;
+                ctxDist.strokeRect(centroX - 200, centroY + 50, canvasDist.width, 50);
+                
+                // Efeito de vento dinâmico
+                ctxDist.fillStyle = 'rgba(88, 166, 255, 0.3)';
+                ctxDist.font = '16px monospace';
+                ctxDist.fillText('💨 Ar (' + velAr + ' m/s) ➔', centroX - 180, centroY + 80);
+
+                // === TREMONHA (Funil Superior) ===
+                ctxDist.fillStyle = 'rgba(88, 166, 255, 0.05)';
+                ctxDist.beginPath();
+                ctxDist.moveTo(centroX - 80, centroY - 120);
+                ctxDist.lineTo(centroX + 80, centroY - 120);
+                ctxDist.lineTo(centroX + 48, centroY);
+                ctxDist.lineTo(centroX - 48, centroY);
+                ctxDist.closePath();
+                ctxDist.fill();
+                ctxDist.strokeStyle = '#58a6ff';
+                ctxDist.lineWidth = 3;
+                ctxDist.stroke();
+                
+                // === GERAR SEMENTES ===
+                const volume = parseFloat(dom.distVol.value) || 150;
+                // Taxa visual proporcional à matemática da máquina
+                const taxaVisual = (volume * rpm) / 5000; 
+                const particulasPorFrame = Math.ceil(taxaVisual);
+                
+                if (rpm > 0) {
+                    for(let i = 0; i < particulasPorFrame; i++) {
+                        particulasDosador.push({
+                            x: centroX + (Math.random() - 0.5) * 100, // Nasce no topo largo do funil
+                            y: centroY - 110 + Math.random() * 20,
+                            raio: 3 + Math.random() * 2,
+                            velY: 1 + Math.random() * 2,
+                            velX: 0,
+                            estado: 'funil' // estados físicos: funil, rolo, tubo
+                        });
+                    }
+                }
+                
+                // === ATUALIZAR E DESENHAR PARTÍCULAS ===
+                ctxDist.fillStyle = '#3fb950'; // Coroa verde clássica de semente tratada
+                for (let i = particulasDosador.length - 1; i >= 0; i--) {
+                    let p = particulasDosador[i];
+                    ctxDist.beginPath();
+                    ctxDist.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+                    ctxDist.fill();
+                    
+                    if (p.estado === 'funil') {
+                        p.y += p.velY;
+                        // Afunilamento físico da chapa de metal
+                        if (p.y < centroY - 20) {
+                            if (p.x < centroX - 40) p.x += 1.5;
+                            if (p.x > centroX + 40) p.x -= 1.5;
+                        } else {
+                            // Semente encostou no rolo dosador
+                            p.estado = 'rolo';
+                        }
+                    } 
+                    else if (p.estado === 'rolo') {
+                        // Semente viaja na estria (sulco) e cai por gravidade na ponta
+                        p.y += (rpmVisual / 30);
+                        if (p.y > centroY + 45) {
+                            p.estado = 'tubo';
+                        }
+                    } 
+                    else if (p.estado === 'tubo') {
+                        p.y += p.velY;
+                        // Semente cai na tubulação pneumática
+                        if (p.y > centroY + 90) {
+                            p.y = centroY + 90 - Math.random() * 5; // Piso do tubo
+                            p.velX = (velAr * 0.3) + Math.random() * 3; // O arrasto carrega para a direita
+                        }
+                        p.x += p.velX;
+                    }
+                    
+                    // Limpar sementes que saíram da tela
+                    if (p.x > canvasDist.width || p.y > canvasDist.height) {
+                        particulasDosador.splice(i, 1);
+                    }
+                }
+
+                // === DESENHAR ROLO DOSADOR (Peça Azul Estriada) ===
+                ctxDist.save();
+                ctxDist.translate(centroX, centroY);
+                ctxDist.rotate(anguloDosador);
+                
+                // Corpo maciço do rolo azul
+                ctxDist.beginPath();
+                ctxDist.arc(0, 0, 45, 0, Math.PI * 2);
+                ctxDist.fillStyle = '#1f6feb'; // Azul idêntico à imagem de projeto
+                ctxDist.fill();
+                ctxDist.lineWidth = 2;
+                ctxDist.strokeStyle = '#58a6ff';
+                ctxDist.stroke();
+                
+                // Desenhar as estrias (recortes semi-circulares)
+                const numDentes = 12;
+                ctxDist.fillStyle = '#0d1117'; // Máscara vazada (mesma cor do fundo do Canvas)
+                for (let i = 0; i < numDentes; i++) {
+                    ctxDist.save();
+                    ctxDist.rotate((i * Math.PI * 2) / numDentes);
+                    ctxDist.beginPath();
+                    ctxDist.arc(45, 0, 12, 0, Math.PI * 2); 
+                    ctxDist.fill();
+                    ctxDist.restore();
+                }
+                
+                // Desenhar Eixo Central (Acoplamento Hexagonal)
+                ctxDist.beginPath();
+                for (let i=0; i<6; i++) {
+                    ctxDist.lineTo(10 * Math.cos(i * Math.PI/3), 10 * Math.sin(i * Math.PI/3));
+                }
+                ctxDist.closePath();
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.fill();
+                
+                ctxDist.restore();
+
+                requestAnimationFrame(renderizarDosador);
+            }
+
+            function renderizarDistribuidorMatterJS() {
+                if (!ativarAnimacaoDist) {
+                    requestAnimationFrame(renderizarDistribuidorMatterJS);
+                    return;
+                }
+                
+                try {
+                    // Verificar se Matter.js está disponível
+                    if (!engineDist || !Engine) {
+                        requestAnimationFrame(renderizarDistribuidorMatterJS);
+                        return;
+                    }
+
+                    // Atualizar física
+                    Engine.update(engineDist, 1000 / 60);
+                
+                // Limpar canvas
+                ctxDist.clearRect(0, 0, canvasDist.width, canvasDist.height);
+                
+                const meioTela = canvasDist.width / 2;
+
+                // Fundo com grid suave
+                ctxDist.strokeStyle = 'rgba(139, 148, 158, 0.1)';
+                ctxDist.lineWidth = 1;
+                for (let i = 0; i < canvasDist.width; i += 50) {
+                    ctxDist.beginPath();
+                    ctxDist.moveTo(i, 0);
+                    ctxDist.lineTo(i, canvasDist.height);
+                    ctxDist.stroke();
+                }
+
+                // Divisória Central
+                ctxDist.beginPath();
+                ctxDist.moveTo(meioTela, 0);
+                ctxDist.lineTo(meioTela, canvasDist.height);
+                ctxDist.strokeStyle = 'rgba(139, 148, 158, 0.4)';
+                ctxDist.lineWidth = 2;
+                ctxDist.setLineDash([5, 5]);
+                ctxDist.stroke();
+                ctxDist.setLineDash([]);
+
+                // Labels de Vista
+                ctxDist.fillStyle = '#c9d1d9';
+                ctxDist.font = 'bold 14px monospace';
+                ctxDist.fillText('VISTA FRONTAL (Corte XY)', 15, 25);
+                ctxDist.fillText('VISTA LATERAL (Espalhamento)', meioTela + 15, 25);
+                
+                const v0 = parseFloat(dom.distV0.value) || 12;
+                const theta_deg = parseFloat(dom.distAngulo.value) || 30;
+                const raio_mm = parseFloat(dom.distRaio.value) || 100;
+                const diam_tubo_mm = parseFloat(dom.distDiamTubo2.value) || 40; // CAPTURA O TUBO
+                const largura_chapa_mm = parseFloat(dom.distLargChapa.value) || 100; 
+                const h_chapa = parseFloat(dom.distAltura.value) || 0.8;
+                const e_rest = parseFloat(dom.distCr.value) || 0.6;
+                const centroY = canvasDist.height * 0.7;
+                const centroX = meioTela / 2; 
+                const centroXLateral = meioTela + (meioTela / 2); 
+                const soloY = centroY + (h_chapa * 120);
+                
+                // === DESENHAR TUBO DE ENTRADA (VISTA FRONTAL) ===
+                const raioTuboVisual = diam_tubo_mm / 2; // 1px = 1mm
+                ctxDist.fillStyle = '#30363d';
+                ctxDist.beginPath();
+                ctxDist.arc(centroX, centroY - 80, raioTuboVisual, 0, Math.PI * 2);
+                ctxDist.fill();
+                ctxDist.strokeStyle = '#8b949e';
+                ctxDist.lineWidth = 2;
+                ctxDist.stroke();
+                
+                // Linha de queda vertical do tubo (Frontal)
+                ctxDist.strokeStyle = '#8b949e';
+                ctxDist.lineWidth = 3;
+                ctxDist.setLineDash([3, 3]);
+                ctxDist.beginPath();
+                ctxDist.moveTo(centroX, centroY - 60);
+                ctxDist.lineTo(centroX, centroY + 30);
+                ctxDist.stroke();
+                ctxDist.setLineDash([]);
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.font = '11px monospace';
+                ctxDist.fillText('TUBO', centroX - 15, centroY - 80 - raioTuboVisual - 10);
+
+                // === DESENHAR TUBO DE ENTRADA (VISTA LATERAL) ===
+                ctxDist.fillStyle = '#30363d';
+                ctxDist.fillRect(centroXLateral - raioTuboVisual, centroY - 120, diam_tubo_mm, 40); 
+                ctxDist.strokeStyle = '#8b949e';
+                ctxDist.lineWidth = 2;
+                ctxDist.strokeRect(centroXLateral - raioTuboVisual, centroY - 120, diam_tubo_mm, 40);
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.font = '11px monospace';
+                ctxDist.fillText('TUBO', centroXLateral - 15, centroY - 130);
+                
+                // Gerar novas sementes periodicamente (limite aumentado para criar volume visual)
+                tempoGeracaoSemente++;
+                if (tempoGeracaoSemente > 6 && particulasBodyDist.length < 15) { 
+                    criarSementeDistribuidor(v0, theta_deg);
+                    tempoGeracaoSemente = 0;
+                }
+                
+                // === DESENHAR DEFLETOR (VISTA FRONTAL) ===
+                // Renderização volumétrica sólida do retângulo inclinado gerado pelo Matter.js
+                const defletorVertices = defletorBody.vertices;
+                
+                // Sombra projetada do corpo rígido
+                ctxDist.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctxDist.beginPath();
+                ctxDist.moveTo(defletorVertices[0].x + 3, defletorVertices[0].y + 3);
+                for (let i = 1; i < defletorVertices.length; i++) {
+                    ctxDist.lineTo(defletorVertices[i].x + 3, defletorVertices[i].y + 3);
+                }
+                ctxDist.closePath();
+                ctxDist.fill();
+
+                // Desenho do corpo preenchido e bordas externas do bloco
+                ctxDist.fillStyle = 'rgba(255, 107, 91, 0.15)';
+                ctxDist.strokeStyle = '#ff6b5b';
+                ctxDist.lineWidth = 4;
+                ctxDist.lineJoin = 'round';
+                ctxDist.beginPath();
+                ctxDist.moveTo(defletorVertices[0].x, defletorVertices[0].y);
+                for (let i = 1; i < defletorVertices.length; i++) {
+                    ctxDist.lineTo(defletorVertices[i].x, defletorVertices[i].y);
+                }
+                ctxDist.closePath();
+                ctxDist.fill();
+                ctxDist.stroke();
+                
+                // Label ângulo (Frontal)
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.font = 'bold 13px monospace';
+                ctxDist.fillText(`${theta_deg}°`, centroX + 50, centroY - 35);
+
+                // === DESENHAR DEFLETOR (VISTA LATERAL) ===
+                // Renderização da chapa baseada na equação da "Flecha" (Sagitta) de um arco.
+                const theta_rad = theta_deg * (Math.PI / 180);
+                const larguraChapa_Vlat = largura_chapa_mm; // Largura visual responde à barra diretamente (1px = 1mm para simplificar)
+                const comprimentoFisico = 150; // Comprimento da chapa inclinada
+                const h_projetada = comprimentoFisico * Math.sin(theta_rad);
+                
+                // Cálculo visual da curvatura geométrica (Sagitta = R - sqrt(R^2 - (L/2)^2))
+                let curvatura = 0;
+                if (raio_mm > (larguraChapa_Vlat / 2)) {
+                    const sagitta_arco = raio_mm - Math.sqrt(Math.pow(raio_mm, 2) - Math.pow(larguraChapa_Vlat / 2, 2));
+                    curvatura = sagitta_arco * Math.cos(theta_rad); 
+                } else {
+                    // Impede o colapso visual se o usuário colocar R menor que L/2 (chapa vira um semi-círculo completo)
+                    curvatura = (larguraChapa_Vlat / 2) * Math.cos(theta_rad);
+                }
+                
+                ctxDist.fillStyle = 'rgba(255, 107, 91, 0.2)';
+                ctxDist.strokeStyle = '#ff6b5b';
+                ctxDist.lineWidth = 5;
+                ctxDist.lineJoin = 'round';
+                
+                ctxDist.beginPath();
+                // Curva do topo da chapa (Convexa, sobe em direção ao centro)
+                ctxDist.moveTo(centroXLateral - larguraChapa_Vlat / 2, centroY - h_projetada / 2 + curvatura);
+                ctxDist.quadraticCurveTo(centroXLateral, centroY - h_projetada / 2 - curvatura, centroXLateral + larguraChapa_Vlat / 2, centroY - h_projetada / 2 + curvatura);
+                
+                // Lateral direita da chapa
+                ctxDist.lineTo(centroXLateral + larguraChapa_Vlat / 2, centroY + h_projetada / 2 + curvatura);
+                
+                // Curva da base da chapa (Acompanha o perfil superior)
+                ctxDist.quadraticCurveTo(centroXLateral, centroY + h_projetada / 2 - curvatura, centroXLateral - larguraChapa_Vlat / 2, centroY + h_projetada / 2 + curvatura);
+                
+                ctxDist.closePath();
+                ctxDist.fill();
+                ctxDist.stroke();
+                
+                // === DESENHAR SEMENTES E FÍSICA LATERAL ===
+                for (let i = particulasBodyDist.length - 1; i >= 0; i--) {
+                    const p = particulasBodyDist[i];
+                    const body = p.body;
+                    
+                    if (body.position.y > centroY - 15 && body.velocity.y > 0 && !p.hit) {
+                        p.hit = true;
+                        
+                        // FÍSICA CORRIGIDA: A semente cai deslocada do centro puramente com base 
+                        // na sua posição dentro do Tubo (p.z). A LARGURA DA CHAPA NÃO INFLUENCIA.
+                        // Caso a semente caia FORA da largura estrutural da chapa, ela não é defletida:
+                        if (Math.abs(p.z) > largura_chapa_mm / 2) {
+                            p.vz = 0; // A semente não encosta na chapa, cai reto (vazamento)
+                        } else {
+                            // Bateu na chapa! Calculamos o desvio baseado na curvatura
+                            const posicaoQueda_mm = p.z; 
+                            const senoTangente = Math.max(-1, Math.min(posicaoQueda_mm / raio_mm, 1)); // Trava de segurança trigonométrica
+                            const angulo_lateral_rad = Math.asin(senoTangente); 
+                            
+                            const v_refl = v0 * e_rest;
+                            p.vz = v_refl * Math.sin(angulo_lateral_rad) + (Math.random() - 0.5) * 0.5;
+                        }
+                    }
+                    
+                    if (p.hit) {
+                        p.z += p.vz; // Propaga no tempo
+                    }
+
+                    // Remover sementes que caíram do solo ou escaparam muito pela lateral
+                    if (body.position.y > canvasDist.height + 100 || Math.abs(p.z) > 300) {
+                        World.remove(worldDist, body);
+                        particulasBodyDist.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // --- RENDERIZAÇÃO: VISTA FRONTAL (XY) ---
+                    ctxDist.shadowColor = '#d29922';
+                    ctxDist.shadowBlur = 5;
+                    ctxDist.fillStyle = '#d29922';
+                    ctxDist.beginPath();
+                    ctxDist.arc(body.position.x, body.position.y, p.raio, 0, Math.PI * 2);
+                    ctxDist.fill();
+                    
+                    ctxDist.shadowColor = 'transparent';
+                    ctxDist.fillStyle = '#ffc107';
+                    ctxDist.beginPath();
+                    ctxDist.arc(body.position.x - 1, body.position.y - 1, p.raio * 0.4, 0, Math.PI * 2);
+                    ctxDist.fill();
+
+                    // --- RENDERIZAÇÃO: VISTA LATERAL (ZY) ---
+                    const z_screen = centroXLateral + p.z; 
+                    
+                    // Impede o desenho de vazar para a visão do quadro esquerdo
+                    if (z_screen > meioTela + 10 && z_screen < canvasDist.width - 10) {
+                        ctxDist.shadowColor = '#d29922';
+                        ctxDist.shadowBlur = 5;
+                        ctxDist.fillStyle = '#d29922';
+                        ctxDist.beginPath();
+                        ctxDist.arc(z_screen, body.position.y, p.raio, 0, Math.PI * 2);
+                        ctxDist.fill();
+                        
+                        ctxDist.shadowColor = 'transparent';
+                        ctxDist.fillStyle = '#ffc107';
+                        ctxDist.beginPath();
+                        ctxDist.arc(z_screen - 1, body.position.y - 1, p.raio * 0.4, 0, Math.PI * 2);
+                        ctxDist.fill();
+                    }
+                }
+                
+                // === DESENHAR SOLO (AMBAS AS VISTAS) ===
+                ctxDist.fillStyle = '#3d2817';
+                ctxDist.fillRect(0, soloY, canvasDist.width, canvasDist.height - soloY);
+                
+                ctxDist.shadowColor = 'transparent';
+                ctxDist.strokeStyle = '#8b949e';
+                ctxDist.lineWidth = 3;
+                ctxDist.beginPath();
+                ctxDist.moveTo(0, soloY);
+                ctxDist.lineTo(canvasDist.width, soloY);
+                ctxDist.stroke();
+                
+                // Label do solo
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.font = 'bold 14px monospace';
+                ctxDist.fillText('SOLO', 15, soloY + 25);
+                ctxDist.fillText('SOLO', meioTela + 15, soloY + 25);
+                
+                // Informação de altura
+                ctxDist.fillStyle = '#8b949e';
+                ctxDist.font = '11px monospace';
+                ctxDist.fillText(`h = ${h_chapa.toFixed(1)}m`, meioTela - 60, soloY - 10);
+                
+                } catch(err) {
+                    console.error('Erro na renderização:', err);
+                }
+                
+                requestAnimationFrame(renderizarDistribuidorMatterJS);
+            }
+
+            // Ativa o sistema
+            console.log('✅ Ativando sistema...');
+            atualizarDashboard();
+            console.log('✅ Dashboard atualizado');
+            renderizar();
+            console.log('✅ Renderizador iniciado');
+            renderizarDistribuidorMatterJS();
+            renderizarDosador(); // Inicia o laço 2D do dosador pneumático
+            console.log('✅ ===== APLICAÇÃO INICIADA COM SUCESSO! =====');
+        }  // Fecha iniciarAplicacao
+    </script>
+</body>
+</html>
