@@ -750,26 +750,38 @@
                             <strong title="Conversão Eletromecânica básica. Clique para referência técnica sobre a eficiência de motores CC.">
                                 <a href="https://www.engineeringtoolbox.com/electrical-motor-efficiency-d_655.html" target="_blank" style="color: inherit; text-decoration: underline;">1. Conversão Elétrica ➔ Mecânica 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{P_{elétrica}}{\\text{Potência Elétrica Consumida (Watts)}} = \\mathtip{V}{\\text{Tensão Nominal da Bateria (Volts)}} \\cdot \\mathtip{I}{\\text{Corrente Elétrica Aplicada (Amperes)}} $$
-                            $$ \\mathtip{P_{elétrica}}{\\text{Potência Elétrica (Watts)}} = ${V} \\cdot ${I.toFixed(1)} = ${P_ele.toFixed(1)}\\text{ W} $$
-                            $$ \\mathtip{P_{útil}}{\\text{Potência Útil (Watts) - Energia líquida no eixo mecânico}} = \\mathtip{P_{elétrica}}{\\text{Potência Elétrica}} \\cdot \\mathtip{\\eta_{motor}}{\\text{Eficiência do Motor - Rendimento descontando calor dissipado}} $$
-                            $$ \\mathtip{P_{útil}}{\\text{Potência Útil (Watts)}} = ${P_ele.toFixed(1)} \\cdot ${eta_m.toFixed(2)} = ${P_util.toFixed(1)}\\text{ W} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência elétrica total consumida da fonte:</p>
+                            $$ \\require{action} \\mathtip{P_{ele}}{\\text{Potência Elétrica (W)}} = \\mathtip{V}{\\text{Tensão Nominal (V)}} \\cdot \\mathtip{I}{\\text{Corrente Aplicada (A)}} $$
+                            $$ P_{ele} = ${V} \\cdot ${I.toFixed(1)} $$
+                            $$ P_{ele} = ${P_ele.toFixed(1)} \\text{ W} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Potência mecânica útil no eixo do motor:</p>
+                            $$ \\mathtip{P_{util}}{\\text{Potência Útil (W)}} = \\mathtip{P_{ele}}{\\text{Potência Elétrica}} \\cdot \\mathtip{\\eta_{mot}}{\\text{Eficiência Eletromagnética}} $$
+                            $$ P_{util} = ${P_ele.toFixed(1)} \\cdot ${eta_m.toFixed(2)} $$
+                            $$ P_{util} = ${P_util.toFixed(1)} \\text{ W} $$
                         </div>
                         <div class="memorial-item yellow">
                             <strong title="Teoria da Cominuição (Trituração) e Bond Work Index. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Comminution" target="_blank" style="color: inherit; text-decoration: underline;">2. Demanda do Material (Fratura) 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{P_{exigida}}{\\text{Potência Mecânica Exigida (Watts) - Força necessária para moagem}} = \\frac{\\mathtip{\\text{Taxa de Moagem}}{\\text{Vazão de material na boca do triturador (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica de Fratura (J/g) - Trabalho empírico para o grão romper}}}{\\mathtip{\\eta_{redutor}}{\\text{Eficiência do Redutor Planetário}}} $$
-                            $$ \\mathtip{P_{exigida}}{\\text{Potência Exigida (Watts)}} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} = ${P_exigida.toFixed(1)}\\text{ W} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Potência mecânica exigida para triturar o fluxo:</p>
+                            $$ \\require{action} \\mathtip{P_{exigida}}{\\text{Potência Mecânica (W)}} = \\frac{\\mathtip{\\dot{m}}{\\text{Taxa de Moagem (g/s)}} \\cdot \\mathtip{E_e}{\\text{Energia Específica (J/g)}}}{\\mathtip{\\eta_{red}}{\\text{Eficiência do Redutor}}} $$
+                            $$ P_{exigida} = \\frac{${taxa.toFixed(1)} \\cdot ${E_e.toFixed(1)}}{${EFICIENCIA_REDUTOR}} $$
+                            $$ P_{exigida} = ${P_exigida.toFixed(1)} \\text{ W} $$
                         </div>
                         <div class="memorial-item green">
                             <strong title="A relação direta entre Potência Angular, Torque e Rotação. Clique para referência.">
                                 <a href="https://www.engineeringtoolbox.com/work-torque-d_1377.html" target="_blank" style="color: inherit; text-decoration: underline;">3. Cinemática e Torque 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{N_{final}}{\\text{Rotação Final nos Rolos (RPM)}} = \\frac{\\mathtip{\\text{RPM Base}}{\\text{Rotação de base informada pelo fabricante do motor}}}{\\mathtip{\\text{Redução}}{\\text{Relação da caixa planetária}}} $$
-                            $$ \\mathtip{N_{final}}{\\text{Rotação Final (RPM)}} = \\frac{${RPM_BASE}}{${red}} = ${rot_final.toFixed(1)}\\text{ RPM} $$
-                            $$ \\mathtip{T_{disp}}{\\text{Torque Disponível (N.m) - Força de torção nas estrias do rolo}} = \\frac{\\mathtip{P_{útil}}{\\text{Potência Útil (Watts)}} \\cdot \\mathtip{\\eta_{redutor}}{\\text{Eficiência Mecânica}}}{\\mathtip{\\omega_{final}}{\\text{Velocidade Angular Final (rad/s)}}} $$
-                            $$ \\mathtip{T_{disp}}{\\text{Torque Disponível (N.m)}} = \\frac{${P_util.toFixed(1)} \\cdot ${EFICIENCIA_REDUTOR}}{(${rot_final.toFixed(1)} \\cdot \\frac{\\pi}{30})} = ${T_disp.toFixed(2)}\\text{ N.m} $$
+                            <p style="margin: 10px 0 5px 0; font-size: 0.9em;">Rotação final nos rolos após a redução:</p>
+                            $$ \\require{action} \\mathtip{N_{final}}{\\text{Rotação Final (RPM)}} = \\frac{\\mathtip{RPM_{base}}{\\text{Rotação Motor}}}{\\mathtip{Red_{caixa}}{\\text{Fator de Redução}}} $$
+                            $$ N_{final} = \\frac{${RPM_BASE}}{${red}} $$
+                            $$ N_{final} = ${rot_final.toFixed(1)} \\text{ RPM} $$
+                            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.05); margin: 10px 0;">
+                            <p style="margin: 5px 0; font-size: 0.9em;">Torque disponível nas estrias do rolo:</p>
+                            $$ \\mathtip{T_{disp}}{\\text{Torque (N.m)}} = \\frac{\\mathtip{P_{util}}{\\text{Potência Útil}} \\cdot \\mathtip{\\eta_{red}}{\\text{Eficiência Mecânica}}}{\\mathtip{\\omega}{\\text{Velocidade Angular Final (rad/s)}}} $$
+                            $$ T_{disp} = \\frac{${P_util.toFixed(1)} \\cdot ${EFICIENCIA_REDUTOR}}{${rot_final.toFixed(1)} \\cdot \\frac{\\pi}{30}} $$
+                            $$ T_{disp} = ${T_disp.toFixed(2)} \\text{ N.m} $$
                         </div>
                     `;
 
@@ -1155,8 +1167,10 @@
                             <strong title="Cinemática bidimensional de projéteis. Clique para referência.">
                                 <a href="https://en.wikipedia.org/wiki/Projectile_motion" target="_blank" style="color: inherit; text-decoration: underline;">3. Alcance Longitudinal (Eixo X) 🔗</a>
                             </strong><br>
-                            $$ \\require{action} \\mathtip{V_x}{\\text{Velocidade X Inicial}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\cos(\\alpha) = ${v_x.toFixed(2)} \\text{ m/s} $$
-                            $$ \\mathtip{D_x}{\\text{Distância Frontal}} = \\mathtip{V_x}{\\text{Veloc. Horizontal}} \\cdot \\mathtip{t}{\\text{Tempo Voo}} = ${alcance_abs.toFixed(2)} \\text{ m} $$
+                            <p style="margin: 10px 0; font-size: 0.9em;">No eixo longitudinal (para a frente), assumimos que a semente viaja livre de resistência do ar em Movimento Retilíneo Uniforme (MRU). Primeiro, isolamos a força que a empurra horizontalmente usando o cosseno do ângulo de saída (&alpha;).</p>
+                            $$ \\require{action} \\mathtip{V_x}{\\text{Componente Horizontal da Velocidade}} = \\mathtip{V_r}{\\text{Vel. Refletida}} \\cdot \\cos(\\alpha) = ${v_x.toFixed(2)} \\text{ m/s} $$
+                            <p style="margin: 10px 0; font-size: 0.9em;">O alcance máximo atingido pela semente é simplesmente essa velocidade horizontal constante multiplicada pelo tempo total que ela passa "voando" antes de tocar o solo.</p>
+                            $$ \\require{action} \\mathtip{D_x}{\\text{Alcance Frontal Máximo (m)}} = \\mathtip{V_x}{\\text{Velocidade Horizontal}} \\cdot \\mathtip{t}{\\text{Tempo de Queda}} = ${alcance_abs.toFixed(2)} \\text{ m} $$
                         </div>
                         <div class="memorial-item red">
                             <strong title="Trigonometria de arcos e Sagitta. Clique para referência.">
@@ -1631,25 +1645,24 @@
                 // === DESENHAR TUBO DE ENTRADA (VISTA FRONTAL) ===
                 const raioTuboVisual = diam_tubo_mm / 2; // 1px = 1mm
                 ctxDist.fillStyle = '#30363d';
-                ctxDist.beginPath();
-                ctxDist.arc(centroX, centroY - 80, raioTuboVisual, 0, Math.PI * 2);
-                ctxDist.fill();
+                // Desenha o tubo como um retângulo (projeção ortogonal)
+                ctxDist.fillRect(centroX - raioTuboVisual, centroY - 120, diam_tubo_mm, 40);
                 ctxDist.strokeStyle = '#8b949e';
                 ctxDist.lineWidth = 2;
-                ctxDist.stroke();
+                ctxDist.strokeRect(centroX - raioTuboVisual, centroY - 120, diam_tubo_mm, 40);
                 
                 // Linha de queda vertical do tubo (Frontal)
                 ctxDist.strokeStyle = '#8b949e';
                 ctxDist.lineWidth = 3;
                 ctxDist.setLineDash([3, 3]);
                 ctxDist.beginPath();
-                ctxDist.moveTo(centroX, centroY - 60);
+                ctxDist.moveTo(centroX, centroY - 80); // Inicia exatamente na base do tubo
                 ctxDist.lineTo(centroX, centroY + 30);
                 ctxDist.stroke();
                 ctxDist.setLineDash([]);
                 ctxDist.fillStyle = '#8b949e';
                 ctxDist.font = '11px monospace';
-                ctxDist.fillText('TUBO', centroX - 15, centroY - 80 - raioTuboVisual - 10);
+                ctxDist.fillText('TUBO', centroX - 15, centroY - 130);
 
                 // === DESENHAR TUBO DE ENTRADA (VISTA LATERAL) ===
                 ctxDist.fillStyle = '#30363d';
